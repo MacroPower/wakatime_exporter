@@ -226,11 +226,11 @@ func NewExporter(uri string, token string, sslVerify bool, timeout time.Duration
 
 func main() {
 	var (
-		listenAddress = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":9101").String()
+		listenAddress = kingpin.Flag("web.listen-address", "Address to listen on for web interface and telemetry.").Default(":9212").String()
 		metricsPath   = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").String()
-		wakaScrapeURI = kingpin.Flag("wakatime.scrape-uri", "Path to query for data.").Default("https://wakatime.com/api/v1/users/current").String()
-		wakaToken     = kingpin.Flag("wakatime.api-key", "Token for trying to get stats from wakatime.").Required().String()
-		wakaTimeout   = kingpin.Flag("wakatime.timeout", "Timeout for trying to get stats from wakatime.").Default("5s").Duration()
+		wakaScrapeURI = kingpin.Flag("wakatime.scrape-uri", "Base path to query for Wakatime data.").Default("https://wakatime.com/api/v1/users/current").String()
+		wakaToken     = kingpin.Flag("wakatime.api-key", "Token to use when getting stats from Wakatime.").Required().String()
+		wakaTimeout   = kingpin.Flag("wakatime.timeout", "Timeout for trying to get stats from Wakatime.").Default("5s").Duration()
 		wakaSSLVerify = kingpin.Flag("wakatime.ssl-verify", "Flag that enables SSL certificate verification for the scrape URI").Default("true").Bool()
 	)
 
