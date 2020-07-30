@@ -4,6 +4,8 @@ Prometheus exporter for Wakatime statistics.
 
 You can get your Wakatime API key by visiting https://wakatime.com/api-key
 
+## Usage
+
 ```text
 usage: wakatime_exporter --wakatime.api-key=WAKATIME.API-KEY [<flags>]
 
@@ -24,4 +26,10 @@ Flags:
       --log.format=logfmt    Output format of log messages. One of: [logfmt, json]
       --version              Show application version.
 
+```
+
+## Docker
+
+```shell
+docker run -p 9212:9212 macropower/wakatime-exporter:0.0.1 --wakatime.api-key="YOUR_API_KEY"
 ```
