@@ -50,10 +50,13 @@ const (
 
 var (
 	wakaMetrics = metrics{
-		"language":         newWakaMetric("language_seconds_total", "Total seconds for each language", prometheus.CounterValue, []string{"name"}, nil),
-		"operating_system": newWakaMetric("operating_system_seconds_total", "Total seconds for each operating system", prometheus.CounterValue, []string{"name"}, nil),
-		"machine":          newWakaMetric("machine_seconds_total", "Total seconds for each machine", prometheus.CounterValue, []string{"name", "id"}, nil),
-		"editor":           newWakaMetric("editor_seconds_total", "Total seconds for each editor", prometheus.CounterValue, []string{"name"}, nil),
+		"total":            newWakaMetric("seconds_total", "Total seconds.", prometheus.CounterValue, nil, nil),
+		"language":         newWakaMetric("language_seconds_total", "Total seconds for each language.", prometheus.CounterValue, []string{"name"}, nil),
+		"operating_system": newWakaMetric("operating_system_seconds_total", "Total seconds for each operating system.", prometheus.CounterValue, []string{"name"}, nil),
+		"machine":          newWakaMetric("machine_seconds_total", "Total seconds for each machine.", prometheus.CounterValue, []string{"name", "id"}, nil),
+		"editor":           newWakaMetric("editor_seconds_total", "Total seconds for each editor.", prometheus.CounterValue, []string{"name"}, nil),
+		"project":          newWakaMetric("project_seconds_total", "Total seconds for each project.", prometheus.CounterValue, []string{"name"}, nil),
+		"category":         newWakaMetric("category_seconds_total", "Total seconds for each category.", prometheus.CounterValue, []string{"name"}, nil),
 	}
 
 	wakaUp = prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "up"), "Was the last scrape of wakatime successful.", nil, nil)
@@ -114,6 +117,8 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 
 	todaySummaryStats := summaryStats.Data[0]
 
+	e.exportMetric(wakaMetrics["total"], ch, todaySummaryStats.GrandTotal.TotalSeconds)
+
 	for _, lang := range todaySummaryStats.Languages {
 		e.exportMetric(wakaMetrics["language"], ch, lang.TotalSeconds, lang.Name)
 	}
@@ -128,6 +133,14 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 
 	for _, editor := range todaySummaryStats.Editors {
 		e.exportMetric(wakaMetrics["editor"], ch, editor.TotalSeconds, editor.Name)
+	}
+
+	for _, project := range todaySummaryStats.Projects {
+		e.exportMetric(wakaMetrics["project"], ch, project.TotalSeconds, project.Name)
+	}
+
+	for _, category := range todaySummaryStats.Categories {
+		e.exportMetric(wakaMetrics["category"], ch, category.TotalSeconds, category.Name)
 	}
 
 	return 1
