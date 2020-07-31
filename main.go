@@ -162,8 +162,8 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	ch <- e.queryFailures
 }
 
-func fetchHTTP(uri *url.URL, token string, sslVerify bool, timeout time.Duration) func() (io.ReadCloser, error) {
-	dateUTC := time.Now().UTC().Format("2006-01-02")
+func fetchHTTP(uri *url.URL, token string, sslVerify bool, tzOffset time.Duration, timeout time.Duration) func() (io.ReadCloser, error) {
+	dateUTC := time.Now().UTC().Add(tzOffset).Format("2006-01-02")
 	params := url.Values{}
 	params.Add("start", dateUTC)
 	params.Add("end", dateUTC)
@@ -205,7 +205,7 @@ func fetchHTTP(uri *url.URL, token string, sslVerify bool, timeout time.Duration
 }
 
 // NewExporter returns an initialized Exporter.
-func NewExporter(uri string, token string, sslVerify bool, timeout time.Duration, logger log.Logger) (*Exporter, error) {
+func NewExporter(uri string, token string, sslVerify bool, tzOffset time.Duration, timeout time.Duration, logger log.Logger) (*Exporter, error) {
 	wakaBaseURI, err := url.Parse(uri)
 	if err != nil {
 		level.Error(logger).Log("msg", "Malformed URL", "err", err.Error())
@@ -213,7 +213,7 @@ func NewExporter(uri string, token string, sslVerify bool, timeout time.Duration
 	}
 
 	var fetchStat func() (io.ReadCloser, error)
-	fetchStat = fetchHTTP(wakaBaseURI, token, sslVerify, timeout)
+	fetchStat = fetchHTTP(wakaBaseURI, token, sslVerify, tzOffset, timeout)
 
 	return &Exporter{
 		URI:       wakaBaseURI,
@@ -243,6 +243,7 @@ func main() {
 		metricsPath   = kingpin.Flag("web.telemetry-path", "Path under which to expose metrics.").Default("/metrics").String()
 		wakaScrapeURI = kingpin.Flag("wakatime.scrape-uri", "Base path to query for Wakatime data.").Default("https://wakatime.com/api/v1/users/current").String()
 		wakaToken     = kingpin.Flag("wakatime.api-key", "Token to use when getting stats from Wakatime.").Required().String()
+		wakaOffset    = kingpin.Flag("wakatime.t-offset", "Time offset (from UTC) for managing Wakatime dates.").Default("0s").Duration()
 		wakaTimeout   = kingpin.Flag("wakatime.timeout", "Timeout for trying to get stats from Wakatime.").Default("5s").Duration()
 		wakaSSLVerify = kingpin.Flag("wakatime.ssl-verify", "Flag that enables SSL certificate verification for the scrape URI").Default("true").Bool()
 	)
@@ -257,7 +258,7 @@ func main() {
 	level.Info(logger).Log("msg", "Starting wakatime_exporter", "version", version.Info())
 	level.Info(logger).Log("msg", "Build context", "context", version.BuildContext())
 
-	exporter, err := NewExporter(*wakaScrapeURI, *wakaToken, *wakaSSLVerify, *wakaTimeout, logger)
+	exporter, err := NewExporter(*wakaScrapeURI, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
 	if err != nil {
 		level.Error(logger).Log("msg", "Error creating an exporter", "err", err)
 		os.Exit(1)
