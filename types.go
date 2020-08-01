@@ -36,7 +36,7 @@ type metrics map[string]metricInfo
 type Exporter struct {
 	URI       *url.URL
 	mutex     sync.RWMutex
-	fetchStat func() (io.ReadCloser, error)
+	fetchStat func(url.URL) (io.ReadCloser, error)
 
 	up                          prometheus.Gauge
 	totalScrapes, queryFailures prometheus.Counter
