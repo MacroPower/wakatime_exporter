@@ -1,24 +1,6 @@
+# Example Metrics
+
 ```text
-# HELP wakatime_editor_seconds_total Total seconds for each editor
-# TYPE wakatime_editor_seconds_total counter
-wakatime_editor_seconds_total{name="VS Code"} 14597.149032
-
-# HELP wakatime_exporter_build_info A metric with a constant '1' value labeled by version, revision, branch, and goversion from which wakatime_exporter was built.
-# TYPE wakatime_exporter_build_info gauge
-wakatime_exporter_build_info{branch="master",goversion="go1.14.6",revision="d2c50eec79c0899ca397db86cc6b108a36cda328",version="0.0.1"} 1
-
-# HELP wakatime_exporter_query_failures_total Number of errors.
-# TYPE wakatime_exporter_query_failures_total counter
-wakatime_exporter_query_failures_total 0
-
-# HELP wakatime_exporter_scrapes_total Current total wakatime scrapes.
-# TYPE wakatime_exporter_scrapes_total counter
-wakatime_exporter_scrapes_total 1
-
-# HELP wakatime_exporter_up Was the last scrape of wakatime successful.
-# TYPE wakatime_exporter_up gauge
-wakatime_exporter_up 1
-
 # HELP wakatime_language_seconds_total Total seconds for each language
 # TYPE wakatime_language_seconds_total counter
 wakatime_language_seconds_total{name="Docker"} 1111.670769
@@ -41,4 +23,37 @@ wakatime_machine_seconds_total{id="8c8e152d-b735-4725-b08c-5f92f35263fb",name="M
 # TYPE wakatime_operating_system_seconds_total counter
 wakatime_operating_system_seconds_total{name="Mac"} 679.408837
 wakatime_operating_system_seconds_total{name="Windows"} 13917.740195
+
+# HELP wakatime_project_seconds_total Total seconds for each project.
+# TYPE wakatime_project_seconds_total counter
+wakatime_project_seconds_total{name="wakatime_exporter"} 13917.740195
+
+# HELP wakatime_category_seconds_total Total seconds for each category.
+# TYPE wakatime_category_seconds_total counter
+wakatime_category_seconds_total{name="Coding"} 13917.740195
+wakatime_category_seconds_total{name="Browsing"} 679.408837
+
+# HELP wakatime_editor_seconds_total Total seconds for each editor
+# TYPE wakatime_editor_seconds_total counter
+wakatime_editor_seconds_total{name="VS Code"} 13917.740195
+
+# HELP wakatime_seconds_total Total seconds.
+# TYPE wakatime_seconds_total counter
+wakatime_seconds_total 14597.149032
+
+# HELP wakatime_exporter_build_info A metric with a constant '1' value labeled by info about wakatime_exporter.
+# TYPE wakatime_exporter_build_info gauge
+wakatime_exporter_build_info{branch="master",goversion="go1.14.6",revision="",version="0.0.3"} 1
+
+# HELP wakatime_exporter_query_failures_total Number of errors.
+# TYPE wakatime_exporter_query_failures_total counter
+wakatime_exporter_query_failures_total 0
+
+# HELP wakatime_exporter_scrapes_total Current total wakatime scrapes.
+# TYPE wakatime_exporter_scrapes_total counter
+wakatime_exporter_scrapes_total 1
+
+# HELP wakatime_exporter_up Was the last scrape of wakatime successful.
+# TYPE wakatime_exporter_up gauge
+wakatime_exporter_up 1
 ```
