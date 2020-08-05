@@ -4,9 +4,12 @@ Prometheus exporter for Wakatime statistics.
 
 [Click here](METRICS.md) to see an example of the exported metrics.
 
-You can get your Wakatime API key by visiting: https://wakatime.com/api-key
+<a href="#"><img src="example.png"></a>
+
 
 ## Usage
+
+You can get your Wakatime API key by visiting: https://wakatime.com/api-key
 
 ```text
 usage: wakatime_exporter --wakatime.api-key=WAKATIME.API-KEY [<flags>]
