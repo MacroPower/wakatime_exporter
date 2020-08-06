@@ -4,8 +4,9 @@ Prometheus exporter for Wakatime statistics.
 
 [Click here](METRICS.md) to see an example of the exported metrics.
 
-<a href="#"><img src="example.png"></a>
+[Click here](https://grafana.com/grafana/dashboards/12790) for a simple dashboard you can use to get started.
 
+<a href="#"><img src="example.png"></a>
 
 ## Usage
 
