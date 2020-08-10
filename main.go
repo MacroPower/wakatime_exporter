@@ -61,17 +61,8 @@ var (
 		"rank":             newWakaMetric("rank", "Current rank of the user.", prometheus.GaugeValue, nil, nil),
 		"goal":             newWakaMetric("goal_seconds", "The goal.", prometheus.GaugeValue, []string{"name", "id", "type", "delta"}, nil),
 		"goal_progress":    newWakaMetric("goal_progress_seconds_total", "Progress towards the goal.", prometheus.CounterValue, []string{"name", "id", "type", "delta"}, nil),
-		"goal_info": newWakaMetric(
-			"goal_info",
-			"Information about the goal.",
-			prometheus.GaugeValue,
-			[]string{
-				"name", "id", "ignore_zero_days",
-				"is_enabled", "is_inverse", "is_snoozed", "is_tweeting",
-			}, nil),
+		"goal_info":        newWakaMetric("goal_info", "Information about the goal.", prometheus.GaugeValue, []string{"name", "id", "ignore_zero_days", "is_enabled", "is_inverse", "is_snoozed", "is_tweeting"}, nil),
 	}
-
-	wakaUp = prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "up"), "Was the last scrape of wakatime successful.", nil, nil)
 )
 
 // Describe describes all the metrics ever exported by the wakatime exporter. It
@@ -81,7 +72,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 		ch <- m.Desc
 	}
 
-	ch <- wakaUp
+	ch <- e.up.Desc()
 	ch <- e.totalScrapes.Desc()
 	ch <- e.queryFailures.Desc()
 }
@@ -91,14 +82,21 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	e.mutex.Lock() // To protect metrics from concurrent collects.
 	defer e.mutex.Unlock()
 
-	up := e.scrape(ch)
+	err := e.scrape(ch)
+	up := float64(1)
+	if err != nil {
+		up = float64(0)
+		e.queryFailures.Inc()
+		level.Error(e.logger).Log("msg", "Can't scrape wakatime", "err", err)
+	}
+	e.up.Set(up)
 
-	ch <- prometheus.MustNewConstMetric(wakaUp, prometheus.GaugeValue, up)
+	ch <- e.up
 	ch <- e.totalScrapes
 	ch <- e.queryFailures
 }
 
-func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
+func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 	level.Debug(e.logger).Log("msg", "Starting scrape")
 
 	e.totalScrapes.Inc()
@@ -108,14 +106,12 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	userURL := *e.URI
 	userURL.Path = userPath
 
-	summariesBody, err := e.fetchStat(userURL, dateUTC, "summaries")
-	goalsBody, err := e.fetchStat(userURL, dateUTC, "goals")
-	leadersBody, err := e.fetchStat(*e.URI, dateUTC, "leaders")
-	allTimeBody, err := e.fetchStat(userURL, dateUTC, "all_time_since_today")
-	if err != nil {
-		e.queryFailures.Inc()
-		level.Error(e.logger).Log("msg", "Can't scrape wakatime", "err", err)
-		return 0
+	summariesBody, fetchErr := e.fetchStat(userURL, dateUTC, "summaries")
+	goalsBody, fetchErr := e.fetchStat(userURL, dateUTC, "goals")
+	leadersBody, fetchErr := e.fetchStat(*e.URI, dateUTC, "leaders")
+	allTimeBody, fetchErr := e.fetchStat(userURL, dateUTC, "all_time_since_today")
+	if fetchErr != nil {
+		return fetchErr
 	}
 
 	respSummariesBody, readErr := ioutil.ReadAll(summariesBody)
@@ -123,9 +119,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	respLeadersBody, readErr := ioutil.ReadAll(leadersBody)
 	respAllTimeBody, readErr := ioutil.ReadAll(allTimeBody)
 	if readErr != nil {
-		e.queryFailures.Inc()
-		level.Error(e.logger).Log("msg", "Can't read wakatime data", "err", readErr)
-		return 0
+		return readErr
 	}
 
 	var closeErr error
@@ -134,9 +128,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	closeErr = leadersBody.Close()
 	closeErr = allTimeBody.Close()
 	if closeErr != nil {
-		e.queryFailures.Inc()
-		level.Error(e.logger).Log("msg", "Can't close wakatime connection", "err", closeErr)
-		return 0
+		return closeErr
 	}
 
 	var jsonErr error
@@ -149,9 +141,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 	jsonErr = json.Unmarshal(respLeadersBody, &leaderStats)
 	jsonErr = json.Unmarshal(respAllTimeBody, &totalStats)
 	if jsonErr != nil {
-		e.queryFailures.Inc()
-		level.Error(e.logger).Log("msg", "Can't unmarshal wakatime data", "err", jsonErr)
-		return 0
+		return jsonErr
 	}
 
 	level.Info(e.logger).Log(
@@ -239,7 +229,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) (up float64) {
 
 	level.Info(e.logger).Log("msg", "Finished scraping Wakatime", "start", summaryStats.Start.String(), "end", summaryStats.End.String())
 
-	return 1
+	return nil
 }
 
 func fetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.Logger) func(uri url.URL, dateUTC string, subPath string) (io.ReadCloser, error) {
