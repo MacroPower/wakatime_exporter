@@ -20,8 +20,6 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 package main
 
 import (
-	"crypto/tls"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -30,7 +28,6 @@ import (
 	"path"
 	"time"
 
-	b64 "encoding/base64"
 	"encoding/json"
 
 	"github.com/go-kit/kit/log"
@@ -230,47 +227,6 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 	level.Info(e.logger).Log("msg", "Finished scraping Wakatime", "start", summaryStats.Start.String(), "end", summaryStats.End.String())
 
 	return nil
-}
-
-func fetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.Logger) func(uri url.URL, dateUTC string, subPath string) (io.ReadCloser, error) {
-	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !sslVerify}}
-	client := http.Client{
-		Timeout:   timeout,
-		Transport: tr,
-	}
-	sEnc := b64.StdEncoding.EncodeToString([]byte(token))
-	return func(uri url.URL, dateUTC string, subPath string) (io.ReadCloser, error) {
-		level.Info(logger).Log("msg", "Scraping Wakatime", "date", dateUTC, "path", subPath)
-
-		params := url.Values{}
-		params.Add("start", dateUTC)
-		params.Add("end", dateUTC)
-
-		uri.Path = path.Join(uri.Path, subPath)
-		uri.RawQuery = params.Encode()
-
-		url := uri.String()
-
-		req, err := http.NewRequest(http.MethodGet, url, nil)
-		if err != nil {
-			return nil, err
-		}
-
-		req.Header = map[string][]string{
-			"Authorization": {"Basic " + sEnc},
-		}
-
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-
-		if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
-			resp.Body.Close()
-			return nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
-		}
-		return resp.Body, nil
-	}
 }
 
 // NewExporter returns an initialized Exporter.

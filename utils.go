@@ -19,7 +19,20 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 package main
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"crypto/tls"
+	b64 "encoding/base64"
+	"fmt"
+	"io"
+	"net/http"
+	"net/url"
+	"path"
+	"time"
+
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/prometheus/client_golang/prometheus"
+)
 
 func newWakaMetric(metricName string, docString string, t prometheus.ValueType, variableLabels []string, constLabels prometheus.Labels) metricInfo {
 	return metricInfo{
@@ -42,4 +55,45 @@ func b2str(b bool) string {
 
 func (e *Exporter) exportMetric(m metricInfo, ch chan<- prometheus.Metric, value float64, labels ...string) {
 	ch <- prometheus.MustNewConstMetric(m.Desc, m.Type, value, labels...)
+}
+
+func fetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.Logger) func(uri url.URL, dateUTC string, subPath string) (io.ReadCloser, error) {
+	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !sslVerify}}
+	client := http.Client{
+		Timeout:   timeout,
+		Transport: tr,
+	}
+	sEnc := b64.StdEncoding.EncodeToString([]byte(token))
+	return func(uri url.URL, dateUTC string, subPath string) (io.ReadCloser, error) {
+		level.Info(logger).Log("msg", "Scraping Wakatime", "date", dateUTC, "path", subPath)
+
+		params := url.Values{}
+		params.Add("start", dateUTC)
+		params.Add("end", dateUTC)
+
+		uri.Path = path.Join(uri.Path, subPath)
+		uri.RawQuery = params.Encode()
+
+		url := uri.String()
+
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		req.Header = map[string][]string{
+			"Authorization": {"Basic " + sEnc},
+		}
+
+		resp, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		}
+
+		if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
+			resp.Body.Close()
+			return nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
+		}
+		return resp.Body, nil
+	}
 }
