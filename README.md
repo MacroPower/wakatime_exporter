@@ -1,5 +1,20 @@
 # wakatime_exporter
 
+<a href="#" target="blank">
+  <img alt="GitHub go.mod Go version" src="https://img.shields.io/github/go-mod/go-version/MacroPower/wakatime_exporter">
+</a>
+<a href="https://hub.docker.com/r/macropower/wakatime-exporter" target="blank">
+  <img alt="Docker Image Size (latest by date)" src="https://img.shields.io/docker/image-size/macropower/wakatime-exporter?color=green">
+</a>
+<a href="https://hub.docker.com/r/macropower/wakatime-exporter" target="blank">
+  <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/macropower/wakatime-exporter">
+</a>
+<a href="https://codeclimate.com/github/MacroPower/wakatime_exporter/maintainability">
+  <img src="https://api.codeclimate.com/v1/badges/ed191a2b4937b9f87096/maintainability">
+</a>
+
+<br>
+
 Prometheus exporter for Wakatime statistics.
 
 [Click here](METRICS.md) to see an example of the exported metrics.
