@@ -17,13 +17,15 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 */
 
-package main
+package lib
 
 import (
 	"crypto/tls"
 	b64 "encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -34,8 +36,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
-func newWakaMetric(metricName string, docString string, t prometheus.ValueType, variableLabels []string, constLabels prometheus.Labels) metricInfo {
-	return metricInfo{
+const (
+	namespace = "wakatime"
+)
+
+// NewWakaMetric creates a MetricInfo struct containing metric Desc and Type
+func NewWakaMetric(metricName string, docString string, t prometheus.ValueType, variableLabels []string, constLabels prometheus.Labels) MetricInfo {
+	return MetricInfo{
 		Desc: prometheus.NewDesc(
 			prometheus.BuildFQName(namespace, "", metricName),
 			docString,
@@ -46,18 +53,16 @@ func newWakaMetric(metricName string, docString string, t prometheus.ValueType, 
 	}
 }
 
-func b2str(b bool) string {
+// BoolToBinary converts booleans to "0" or "1"
+func BoolToBinary(b bool) string {
 	if b {
 		return "1"
 	}
 	return "0"
 }
 
-func (e *Exporter) exportMetric(m metricInfo, ch chan<- prometheus.Metric, value float64, labels ...string) {
-	ch <- prometheus.MustNewConstMetric(m.Desc, m.Type, value, labels...)
-}
-
-func fetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.Logger) func(uri url.URL, dateUTC string, subPath string) (io.ReadCloser, error) {
+// FetchHTTP is a generic fetch method for Wakatime API endpoints
+func FetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.Logger) func(uri url.URL, dateUTC string, subPath string) (io.ReadCloser, error) {
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !sslVerify}}
 	client := http.Client{
 		Timeout:   timeout,
@@ -96,4 +101,35 @@ func fetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.L
 		}
 		return resp.Body, nil
 	}
+}
+
+// ReadAndUnmarshal reads the JSON response body and unmarshals the response
+func ReadAndUnmarshal(body io.ReadCloser, object interface{}) error {
+	respBody, readErr := ioutil.ReadAll(body)
+
+	if readErr != nil {
+		return readErr
+	}
+
+	var jsonErr error
+	jsonErr = json.Unmarshal(respBody, &object)
+	if jsonErr != nil {
+		return jsonErr
+	}
+
+	return nil
+}
+
+// GetDate applies any offsets and returns the current YYYY-MM-DD date
+func GetDate(offset time.Duration) string {
+	return time.Now().UTC().Add(offset).Format("2006-01-02")
+}
+
+// UserPath appends the User path to a given URL
+func UserPath(uri *url.URL, user string) url.URL {
+	userURL := *uri
+	userPath := path.Join(userURL.Path, "users", user)
+
+	userURL.Path = userPath
+	return userURL
 }

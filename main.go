@@ -20,17 +20,10 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 package main
 
 import (
-	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
-	"path"
-	"time"
 
-	"encoding/json"
-
-	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -38,231 +31,12 @@ import (
 	"github.com/prometheus/common/promlog/flag"
 	"github.com/prometheus/common/version"
 	"gopkg.in/alecthomas/kingpin.v2"
+
+	alltime "github.com/MacroPower/wakatime_exporter/collectors/alltime"
+	goal "github.com/MacroPower/wakatime_exporter/collectors/goal"
+	leader "github.com/MacroPower/wakatime_exporter/collectors/leader"
+	summary "github.com/MacroPower/wakatime_exporter/collectors/summary"
 )
-
-const (
-	namespace = "wakatime"
-	subsystem = "exporter"
-)
-
-var (
-	wakaMetrics = metrics{
-		"total":            newWakaMetric("seconds_total", "Total seconds.", prometheus.CounterValue, nil, nil),
-		"cumulative_total": newWakaMetric("cumulative_seconds_total", "Total seconds (all time).", prometheus.CounterValue, nil, nil),
-		"language":         newWakaMetric("language_seconds_total", "Total seconds for each language.", prometheus.CounterValue, []string{"name"}, nil),
-		"operating_system": newWakaMetric("operating_system_seconds_total", "Total seconds for each operating system.", prometheus.CounterValue, []string{"name"}, nil),
-		"machine":          newWakaMetric("machine_seconds_total", "Total seconds for each machine.", prometheus.CounterValue, []string{"name", "id"}, nil),
-		"editor":           newWakaMetric("editor_seconds_total", "Total seconds for each editor.", prometheus.CounterValue, []string{"name"}, nil),
-		"project":          newWakaMetric("project_seconds_total", "Total seconds for each project.", prometheus.CounterValue, []string{"name"}, nil),
-		"category":         newWakaMetric("category_seconds_total", "Total seconds for each category.", prometheus.CounterValue, []string{"name"}, nil),
-		"rank":             newWakaMetric("rank", "Current rank of the user.", prometheus.GaugeValue, nil, nil),
-		"goal":             newWakaMetric("goal_seconds", "The goal.", prometheus.GaugeValue, []string{"name", "id", "type", "delta"}, nil),
-		"goal_progress":    newWakaMetric("goal_progress_seconds_total", "Progress towards the goal.", prometheus.CounterValue, []string{"name", "id", "type", "delta"}, nil),
-		"goal_info":        newWakaMetric("goal_info", "Information about the goal.", prometheus.GaugeValue, []string{"name", "id", "ignore_zero_days", "is_enabled", "is_inverse", "is_snoozed", "is_tweeting"}, nil),
-	}
-)
-
-// Describe describes all the metrics ever exported by the wakatime exporter. It
-// implements prometheus.Collector.
-func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
-	for _, m := range wakaMetrics {
-		ch <- m.Desc
-	}
-
-	ch <- e.up.Desc()
-	ch <- e.totalScrapes.Desc()
-	ch <- e.queryFailures.Desc()
-}
-
-// Collect all the metrics.
-func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-	e.mutex.Lock() // To protect metrics from concurrent collects.
-	defer e.mutex.Unlock()
-
-	err := e.scrape(ch)
-	up := float64(1)
-	if err != nil {
-		up = float64(0)
-		e.queryFailures.Inc()
-		level.Error(e.logger).Log("msg", "Can't scrape wakatime", "err", err)
-	}
-	e.up.Set(up)
-
-	ch <- e.up
-	ch <- e.totalScrapes
-	ch <- e.queryFailures
-}
-
-func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
-	level.Debug(e.logger).Log("msg", "Starting scrape")
-
-	e.totalScrapes.Inc()
-
-	dateUTC := time.Now().UTC().Add(e.tzOffset).Format("2006-01-02")
-	userPath := path.Join(e.URI.Path, "users", e.user)
-	userURL := *e.URI
-	userURL.Path = userPath
-
-	summariesBody, fetchErr := e.fetchStat(userURL, dateUTC, "summaries")
-	goalsBody, fetchErr := e.fetchStat(userURL, dateUTC, "goals")
-	leadersBody, fetchErr := e.fetchStat(*e.URI, dateUTC, "leaders")
-	allTimeBody, fetchErr := e.fetchStat(userURL, dateUTC, "all_time_since_today")
-	if fetchErr != nil {
-		return fetchErr
-	}
-
-	respSummariesBody, readErr := ioutil.ReadAll(summariesBody)
-	respGoalsBody, readErr := ioutil.ReadAll(goalsBody)
-	respLeadersBody, readErr := ioutil.ReadAll(leadersBody)
-	respAllTimeBody, readErr := ioutil.ReadAll(allTimeBody)
-	if readErr != nil {
-		return readErr
-	}
-
-	var closeErr error
-	closeErr = summariesBody.Close()
-	closeErr = goalsBody.Close()
-	closeErr = leadersBody.Close()
-	closeErr = allTimeBody.Close()
-	if closeErr != nil {
-		return closeErr
-	}
-
-	var jsonErr error
-	summaryStats := WakatimeSummary{}
-	goalStats := WakatimeGoal{}
-	leaderStats := WakatimeLeader{}
-	totalStats := WakatimeTime{}
-	jsonErr = json.Unmarshal(respSummariesBody, &summaryStats)
-	jsonErr = json.Unmarshal(respGoalsBody, &goalStats)
-	jsonErr = json.Unmarshal(respLeadersBody, &leaderStats)
-	jsonErr = json.Unmarshal(respAllTimeBody, &totalStats)
-	if jsonErr != nil {
-		return jsonErr
-	}
-
-	level.Info(e.logger).Log(
-		"msg", "Collecting all time from Wakatime",
-		"IsUpToDate", totalStats.Data.IsUpToDate,
-	)
-	if totalStats.Data.IsUpToDate == true {
-		e.exportMetric(wakaMetrics["cumulative_total"], ch, totalStats.Data.TotalSeconds)
-	}
-
-	level.Info(e.logger).Log(
-		"msg", "Collecting goals from Wakatime",
-		"total", goalStats.Total,
-		"pages", goalStats.TotalPages,
-	)
-	for _, data := range goalStats.Data {
-		// the last element should be the most recent data
-		currentChartData := data.ChartData[len(data.ChartData)-1]
-
-		e.exportMetric(
-			wakaMetrics["goal_progress"], ch, currentChartData.ActualSeconds,
-			data.Title, data.ID, data.Type, data.Delta,
-		)
-		e.exportMetric(
-			wakaMetrics["goal"], ch, float64(data.Seconds),
-			data.Title, data.ID, data.Type, data.Delta,
-		)
-		e.exportMetric(
-			wakaMetrics["goal_info"], ch, 1,
-			data.Title, data.ID,
-			b2str(data.IgnoreZeroDays), b2str(data.IsEnabled), b2str(data.IsInverse), b2str(data.IsSnoozed), b2str(data.IsTweeting),
-		)
-	}
-
-	level.Info(e.logger).Log(
-		"msg", "Collecting rank from Wakatime",
-		"page", leaderStats.Page,
-		"updated", leaderStats.ModifiedAt,
-	)
-	currentRank := float64(leaderStats.CurrentUser.Rank)
-	e.exportMetric(wakaMetrics["rank"], ch, currentRank)
-
-	for i, data := range summaryStats.Data {
-		level.Info(e.logger).Log(
-			"msg", "Collecting summary from Wakatime",
-			"obj", i,
-			"start", data.Range.Start.String(),
-			"end", data.Range.End.String(),
-			"tz", data.Range.Timezone,
-			"text", data.Range.Text,
-		)
-	}
-
-	resultLength := len(summaryStats.Data)
-	if resultLength != 1 {
-		level.Error(e.logger).Log("msg", "Length of results is incorrect", "size", resultLength)
-	}
-	todaySummaryStats := summaryStats.Data[0]
-
-	e.exportMetric(wakaMetrics["total"], ch, todaySummaryStats.GrandTotal.TotalSeconds)
-
-	for _, lang := range todaySummaryStats.Languages {
-		e.exportMetric(wakaMetrics["language"], ch, lang.TotalSeconds, lang.Name)
-	}
-
-	for _, os := range todaySummaryStats.OperatingSystems {
-		e.exportMetric(wakaMetrics["operating_system"], ch, os.TotalSeconds, os.Name)
-	}
-
-	for _, machine := range todaySummaryStats.Machines {
-		e.exportMetric(wakaMetrics["machine"], ch, machine.TotalSeconds, machine.Name, machine.MachineNameID)
-	}
-
-	for _, editor := range todaySummaryStats.Editors {
-		e.exportMetric(wakaMetrics["editor"], ch, editor.TotalSeconds, editor.Name)
-	}
-
-	for _, project := range todaySummaryStats.Projects {
-		e.exportMetric(wakaMetrics["project"], ch, project.TotalSeconds, project.Name)
-	}
-
-	for _, category := range todaySummaryStats.Categories {
-		e.exportMetric(wakaMetrics["category"], ch, category.TotalSeconds, category.Name)
-	}
-
-	level.Info(e.logger).Log("msg", "Finished scraping Wakatime", "start", summaryStats.Start.String(), "end", summaryStats.End.String())
-
-	return nil
-}
-
-// NewExporter returns an initialized Exporter.
-func NewExporter(uri string, user string, token string, sslVerify bool, tzOffset time.Duration, timeout time.Duration, logger log.Logger) (*Exporter, error) {
-	wakaBaseURI, err := url.Parse(uri)
-	if err != nil {
-		level.Error(logger).Log("msg", "Malformed URL", "err", err.Error())
-		return nil, err
-	}
-
-	var fetchStat func(url.URL, string, string) (io.ReadCloser, error)
-	fetchStat = fetchHTTP(token, sslVerify, timeout, logger)
-
-	return &Exporter{
-		URI:       wakaBaseURI,
-		user:      user,
-		fetchStat: fetchStat,
-		tzOffset:  tzOffset,
-		up: prometheus.NewGauge(prometheus.GaugeOpts{
-			Namespace: namespace,
-			Name:      "up",
-			Help:      "Was the last scrape of wakatime successful.",
-		}),
-		totalScrapes: prometheus.NewCounter(prometheus.CounterOpts{
-			Namespace: namespace,
-			Name:      "exporter_scrapes_total",
-			Help:      "Current total wakatime scrapes.",
-		}),
-		queryFailures: prometheus.NewCounter(prometheus.CounterOpts{
-			Namespace: namespace,
-			Name:      "exporter_query_failures_total",
-			Help:      "Number of errors.",
-		}),
-		logger: logger,
-	}, nil
-}
 
 func main() {
 	var (
@@ -286,13 +60,19 @@ func main() {
 	level.Info(logger).Log("msg", "Starting wakatime_exporter", "version", version.Info())
 	level.Info(logger).Log("msg", "Build context", "context", version.BuildContext())
 
-	exporter, err := NewExporter(*wakaScrapeURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
+	wakaBaseURI, err := url.Parse(*wakaScrapeURI)
 	if err != nil {
-		level.Error(logger).Log("msg", "Error creating an exporter", "err", err)
+		level.Error(logger).Log("msg", "Error parsing URL", "err", err)
 		os.Exit(1)
 	}
-	prometheus.MustRegister(exporter)
-	prometheus.MustRegister(version.NewCollector("wakatime_exporter"))
+
+	exporter := version.NewCollector("wakatime_exporter")
+	summaryExporter := summary.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
+	leaderExporter := leader.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
+	goalExporter := goal.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
+	alltimeExporter := alltime.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
+
+	prometheus.MustRegister(exporter, summaryExporter, leaderExporter, goalExporter, alltimeExporter)
 
 	level.Info(logger).Log("msg", "Listening on address", "address", *listenAddress)
 	http.Handle(*metricsPath, promhttp.Handler())
