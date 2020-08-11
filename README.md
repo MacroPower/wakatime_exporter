@@ -1,22 +1,23 @@
-# wakatime_exporter
+<h2 align="center">wakatime_exporter</h2>
+<p align="center">
+  <a href="#" target="blank">
+    <img alt="GitHub go.mod Go version" src="https://img.shields.io/github/go-mod/go-version/MacroPower/wakatime_exporter">
+  </a>
+  <a href="https://hub.docker.com/r/macropower/wakatime-exporter" target="blank">
+    <img alt="Docker Image Size (latest by date)" src="https://img.shields.io/docker/image-size/macropower/wakatime-exporter?color=green">
+  </a>
+  <a href="https://hub.docker.com/r/macropower/wakatime-exporter" target="blank">
+    <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/macropower/wakatime-exporter">
+  </a>
+  <a href="https://goreportcard.com/report/github.com/MacroPower/wakatime_exporter" target="blank">
+    <img src="https://goreportcard.com/badge/github.com/MacroPower/wakatime_exporter">
+  </a>
+  <a href="https://codeclimate.com/github/MacroPower/wakatime_exporter/maintainability" target="blank">
+    <img src="https://api.codeclimate.com/v1/badges/ed191a2b4937b9f87096/maintainability">
+  </a>
+</p>
 
-<a href="#" target="blank">
-  <img alt="GitHub go.mod Go version" src="https://img.shields.io/github/go-mod/go-version/MacroPower/wakatime_exporter">
-</a>
-<a href="https://hub.docker.com/r/macropower/wakatime-exporter" target="blank">
-  <img alt="Docker Image Size (latest by date)" src="https://img.shields.io/docker/image-size/macropower/wakatime-exporter?color=green">
-</a>
-<a href="https://hub.docker.com/r/macropower/wakatime-exporter" target="blank">
-  <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/macropower/wakatime-exporter">
-</a>
-<a href="https://goreportcard.com/report/github.com/MacroPower/wakatime_exporter" target="blank">
-  <img src="https://goreportcard.com/badge/github.com/MacroPower/wakatime_exporter">
-</a>
-<a href="https://codeclimate.com/github/MacroPower/wakatime_exporter/maintainability" target="blank">
-  <img src="https://api.codeclimate.com/v1/badges/ed191a2b4937b9f87096/maintainability">
-</a>
-
-Prometheus exporter for Wakatime statistics.
+_wakatime_exporter_ is a Prometheus exporter for Wakatime statistics. It intends to extend the existing Wakatime ecosystem via allowing users to make use of Prometheus (and therefore any consumers of its API) as companion services alongside the traditional Wakatime web application. This could be anything from including some of your coding statistics in Grafana, to forecasting your coding time with prophet. Sky's the limit!
 
 [Click here](METRICS.md) to see an example of the exported metrics.
 
