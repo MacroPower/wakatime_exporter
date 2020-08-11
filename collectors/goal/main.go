@@ -20,11 +20,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 package goal
 
 import (
-	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/url"
-	"path"
 	"time"
 
 	exporter "github.com/MacroPower/wakatime_exporter/lib"
@@ -103,7 +100,7 @@ func (e *exporterGoal) Collect(ch chan<- prometheus.Metric) {
 	if err != nil {
 		up = float64(0)
 		e.queryFailures.Inc()
-		level.Error(e.logger).Log("msg", "Can't scrape wakatime", "err", err)
+		level.Error(e.logger).Log("msg", "Can't scrape wakatime", "subsystem", subsystem, "err", err)
 	}
 	e.up.Set(up)
 
@@ -121,32 +118,19 @@ func (e *exporterGoal) scrape(ch chan<- prometheus.Metric) error {
 
 	e.totalScrapes.Inc()
 
-	dateUTC := time.Now().UTC().Add(e.tzOffset).Format("2006-01-02")
-	userPath := path.Join(e.URI.Path, "users", e.user)
-	userURL := *e.URI
-	userURL.Path = userPath
+	dateUTC := exporter.GetDate(e.tzOffset)
+	userURL := exporter.UserPath(e.URI, e.user)
 
 	body, fetchErr := e.fetchStat(userURL, dateUTC, endpoint)
+	defer body.Close()
 	if fetchErr != nil {
 		return fetchErr
 	}
 
-	respBody, readErr := ioutil.ReadAll(body)
-	if readErr != nil {
-		return readErr
-	}
-
-	var closeErr error
-	closeErr = body.Close()
-	if closeErr != nil {
-		return closeErr
-	}
-
-	var jsonErr error
 	goalStats := wakatimeGoal{}
-	jsonErr = json.Unmarshal(respBody, &goalStats)
-	if jsonErr != nil {
-		return jsonErr
+	err := exporter.ReadAndUnmarshal(body, &goalStats)
+	if err != nil {
+		return err
 	}
 
 	level.Info(e.logger).Log(

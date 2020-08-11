@@ -20,9 +20,7 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 package leader
 
 import (
-	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net/url"
 	"time"
 
@@ -99,7 +97,7 @@ func (e *exporterLeader) Collect(ch chan<- prometheus.Metric) {
 	if err != nil {
 		up = float64(0)
 		e.queryFailures.Inc()
-		level.Error(e.logger).Log("msg", "Can't scrape wakatime", "err", err)
+		level.Error(e.logger).Log("msg", "Can't scrape wakatime", "subsystem", subsystem, "err", err)
 	}
 	e.up.Set(up)
 
@@ -117,29 +115,17 @@ func (e *exporterLeader) scrape(ch chan<- prometheus.Metric) error {
 
 	e.totalScrapes.Inc()
 
-	dateUTC := time.Now().UTC().Add(e.tzOffset).Format("2006-01-02")
-
+	dateUTC := exporter.GetDate(e.tzOffset)
 	body, fetchErr := e.fetchStat(*e.URI, dateUTC, endpoint)
+	defer body.Close()
 	if fetchErr != nil {
 		return fetchErr
 	}
 
-	respBody, readErr := ioutil.ReadAll(body)
-	if readErr != nil {
-		return readErr
-	}
-
-	var closeErr error
-	closeErr = body.Close()
-	if closeErr != nil {
-		return closeErr
-	}
-
-	var jsonErr error
 	leaderStats := wakatimeLeader{}
-	jsonErr = json.Unmarshal(respBody, &leaderStats)
-	if jsonErr != nil {
-		return jsonErr
+	err := exporter.ReadAndUnmarshal(body, &leaderStats)
+	if err != nil {
+		return err
 	}
 
 	level.Info(e.logger).Log(

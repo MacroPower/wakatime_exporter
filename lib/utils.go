@@ -22,8 +22,10 @@ package lib
 import (
 	"crypto/tls"
 	b64 "encoding/base64"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -99,4 +101,35 @@ func FetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.L
 		}
 		return resp.Body, nil
 	}
+}
+
+// ReadAndUnmarshal reads the JSON response body and unmarshals the response
+func ReadAndUnmarshal(body io.ReadCloser, object interface{}) error {
+	respBody, readErr := ioutil.ReadAll(body)
+
+	if readErr != nil {
+		return readErr
+	}
+
+	var jsonErr error
+	jsonErr = json.Unmarshal(respBody, &object)
+	if jsonErr != nil {
+		return jsonErr
+	}
+
+	return nil
+}
+
+// GetDate applies any offsets and returns the current YYYY-MM-DD date
+func GetDate(offset time.Duration) string {
+	return time.Now().UTC().Add(offset).Format("2006-01-02")
+}
+
+// UserPath appends the User path to a given URL
+func UserPath(uri *url.URL, user string) url.URL {
+	userURL := *uri
+	userPath := path.Join(userURL.Path, "users", user)
+
+	userURL.Path = userPath
+	return userURL
 }
