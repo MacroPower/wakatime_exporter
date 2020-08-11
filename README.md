@@ -9,11 +9,12 @@
 <a href="https://hub.docker.com/r/macropower/wakatime-exporter" target="blank">
   <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/macropower/wakatime-exporter">
 </a>
-<a href="https://codeclimate.com/github/MacroPower/wakatime_exporter/maintainability">
+<a href="https://goreportcard.com/report/github.com/MacroPower/wakatime_exporter" target="blank">
+  <img src="https://goreportcard.com/badge/github.com/MacroPower/wakatime_exporter">
+</a>
+<a href="https://codeclimate.com/github/MacroPower/wakatime_exporter/maintainability" target="blank">
   <img src="https://api.codeclimate.com/v1/badges/ed191a2b4937b9f87096/maintainability">
 </a>
-
-<br>
 
 Prometheus exporter for Wakatime statistics.
 
