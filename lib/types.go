@@ -20,8 +20,26 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 package lib
 
 import (
+	"io"
+	"net/url"
+	"sync"
+	"time"
+
+	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 )
+
+type Exporter struct {
+	URI            *url.URL
+	Endpoint, User string
+	Mutex          sync.RWMutex
+	FetchStat      func(url.URL, string, string) (io.ReadCloser, error)
+	TZOffset       time.Duration
+
+	Up                          prometheus.Gauge
+	TotalScrapes, QueryFailures prometheus.Counter
+	Logger                      log.Logger
+}
 
 // Metrics maps all MetricInfo
 type Metrics map[string]MetricInfo

@@ -20,26 +20,8 @@ Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 package leader
 
 import (
-	"io"
-	"net/url"
-	"sync"
 	"time"
-
-	"github.com/go-kit/kit/log"
-	"github.com/prometheus/client_golang/prometheus"
 )
-
-type exporterLeader struct {
-	URI       *url.URL
-	endpoint  string
-	mutex     sync.RWMutex
-	fetchStat func(url.URL, string, string) (io.ReadCloser, error)
-	tzOffset  time.Duration
-
-	up                          prometheus.Gauge
-	totalScrapes, queryFailures prometheus.Counter
-	logger                      log.Logger
-}
 
 type wakatimeLeader struct {
 	CurrentUser struct {

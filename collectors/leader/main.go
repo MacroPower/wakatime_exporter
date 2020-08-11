@@ -43,80 +43,84 @@ var (
 	}
 )
 
+// Exporter is the local definition of Exporter
+type Exporter exporter.Exporter
+
 // NewExporter creates the Leader exporter
-func NewExporter(baseURI *url.URL, user string, token string, sslVerify bool, tzOffset time.Duration, timeout time.Duration, logger log.Logger) *exporterLeader {
+func NewExporter(baseURI *url.URL, user string, token string, sslVerify bool, tzOffset time.Duration, timeout time.Duration, logger log.Logger) *Exporter {
 	var fetchStat func(url.URL, string, string) (io.ReadCloser, error)
 	fetchStat = exporter.FetchHTTP(token, sslVerify, timeout, logger)
 
-	return &exporterLeader{
+	return &Exporter{
 		URI:       baseURI,
-		endpoint:  endpoint,
-		fetchStat: fetchStat,
-		tzOffset:  tzOffset,
-		up: prometheus.NewGauge(prometheus.GaugeOpts{
+		Endpoint:  endpoint,
+		User:      user,
+		FetchStat: fetchStat,
+		TZOffset:  tzOffset,
+		Up: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
 			Name:      "up",
 			Help:      "Was the last scrape of wakatime successful.",
 		}),
-		totalScrapes: prometheus.NewCounter(prometheus.CounterOpts{
+		TotalScrapes: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
 			Name:      "exporter_scrapes_total",
 			Help:      "Current total wakatime scrapes.",
 		}),
-		queryFailures: prometheus.NewCounter(prometheus.CounterOpts{
+		QueryFailures: prometheus.NewCounter(prometheus.CounterOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
 			Name:      "exporter_query_failures_total",
 			Help:      "Number of errors.",
 		}),
-		logger: logger,
+		Logger: logger,
 	}
 }
 
 // Describe describes all the metrics ever exported by the wakatime exporter. It
 // implements prometheus.Collector.
-func (e *exporterLeader) Describe(ch chan<- *prometheus.Desc) {
+func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 	for _, m := range wakaMetrics {
 		ch <- m.Desc
 	}
 
-	ch <- e.up.Desc()
-	ch <- e.totalScrapes.Desc()
-	ch <- e.queryFailures.Desc()
+	ch <- e.Up.Desc()
+	ch <- e.TotalScrapes.Desc()
+	ch <- e.QueryFailures.Desc()
 }
 
 // Collect all the metrics.
-func (e *exporterLeader) Collect(ch chan<- prometheus.Metric) {
-	e.mutex.Lock() // To protect metrics from concurrent collects.
-	defer e.mutex.Unlock()
+func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
+	e.Mutex.Lock() // To protect metrics from concurrent collects.
+	defer e.Mutex.Unlock()
 
 	err := e.scrape(ch)
 	up := float64(1)
 	if err != nil {
 		up = float64(0)
-		e.queryFailures.Inc()
-		level.Error(e.logger).Log("msg", "Can't scrape wakatime", "subsystem", subsystem, "err", err)
+		e.QueryFailures.Inc()
+		level.Error(e.Logger).Log("msg", "Can't scrape wakatime", "subsystem", subsystem, "err", err)
 	}
-	e.up.Set(up)
+	e.Up.Set(up)
 
-	ch <- e.up
-	ch <- e.totalScrapes
-	ch <- e.queryFailures
+	ch <- e.Up
+	ch <- e.TotalScrapes
+	ch <- e.QueryFailures
 }
 
-func (e *exporterLeader) exportMetric(m exporter.MetricInfo, ch chan<- prometheus.Metric, value float64, labels ...string) {
+func (e *Exporter) exportMetric(m exporter.MetricInfo, ch chan<- prometheus.Metric, value float64, labels ...string) {
 	ch <- prometheus.MustNewConstMetric(m.Desc, m.Type, value, labels...)
 }
 
-func (e *exporterLeader) scrape(ch chan<- prometheus.Metric) error {
-	level.Debug(e.logger).Log("msg", "Starting scrape")
+func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
+	level.Debug(e.Logger).Log("msg", "Starting scrape")
 
-	e.totalScrapes.Inc()
+	e.TotalScrapes.Inc()
 
-	dateUTC := exporter.GetDate(e.tzOffset)
-	body, fetchErr := e.fetchStat(*e.URI, dateUTC, endpoint)
+	dateUTC := exporter.GetDate(e.TZOffset)
+	body, fetchErr := e.FetchStat(*e.URI, dateUTC, endpoint)
 	defer body.Close()
 	if fetchErr != nil {
 		return fetchErr
@@ -128,7 +132,7 @@ func (e *exporterLeader) scrape(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
-	level.Info(e.logger).Log(
+	level.Info(e.Logger).Log(
 		"msg", "Collecting rank from Wakatime",
 		"page", leaderStats.Page,
 		"updated", leaderStats.ModifiedAt,
