@@ -66,16 +66,13 @@ func main() {
 		os.Exit(1)
 	}
 
+	exporter := version.NewCollector("wakatime_exporter")
 	summaryExporter := summary.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
 	leaderExporter := leader.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
 	goalExporter := goal.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
 	alltimeExporter := alltime.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
 
-	prometheus.MustRegister(summaryExporter)
-	prometheus.MustRegister(leaderExporter)
-	prometheus.MustRegister(goalExporter)
-	prometheus.MustRegister(alltimeExporter)
-	prometheus.MustRegister(version.NewCollector("wakatime_exporter"))
+	prometheus.MustRegister(exporter, summaryExporter, leaderExporter, goalExporter, alltimeExporter)
 
 	level.Info(logger).Log("msg", "Listening on address", "address", *listenAddress)
 	http.Handle(*metricsPath, promhttp.Handler())

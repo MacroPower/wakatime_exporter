@@ -180,7 +180,5 @@ func (e *exporterSummary) scrape(ch chan<- prometheus.Metric) error {
 		e.exportMetric(wakaMetrics["category"], ch, category.TotalSeconds, category.Name)
 	}
 
-	level.Info(e.logger).Log("msg", "Finished scraping Wakatime", "start", summaryStats.Start.String(), "end", summaryStats.End.String())
-
 	return nil
 }
