@@ -1,4 +1,4 @@
-<h2 align="center">wakatime_exporter</h2>
+<h2 align="center">:construction: wakatime_exporter :construction:</h2>
 <p align="center">
   <a href="#" target="blank">
     <img alt="GitHub go.mod Go version" src="https://img.shields.io/github/go-mod/go-version/MacroPower/wakatime_exporter">
@@ -18,6 +18,8 @@
 </p>
 
 _wakatime_exporter_ is a Prometheus exporter for Wakatime statistics. It intends to extend the existing Wakatime ecosystem via allowing users to make use of Prometheus (and therefore any consumers of its API) as companion services alongside the traditional Wakatime web application. This could be anything from including some of your coding statistics in Grafana, to forecasting your coding time with prophet. Sky's the limit!
+
+> NOTE: _wakatime_exporter_ is currently in  ALPHA. Expect things to break and change.
 
 [Click here](METRICS.md) to see an example of the exported metrics.
 
