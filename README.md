@@ -71,5 +71,5 @@ WAKA_SSL_VERIFY="true"                        # SSL certificate verification for
 ## Docker
 
 ```shell
-docker run -p 9212:9212 macropower/wakatime-exporter:0.0.4 --wakatime.api-key="YOUR_API_KEY"
+docker run -p 9212:9212 macropower/wakatime-exporter:latest --wakatime.api-key="YOUR_API_KEY"
 ```
