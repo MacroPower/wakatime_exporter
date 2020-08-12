@@ -1,6 +1,5 @@
 <a href="#"><img src="img/waka_header.png"></a>
-
-<h2 align="center">:construction: wakatime_exporter :construction:</h2>
+<h2></h2>
 <p align="center">
   <a href="#" target="blank">
     <img alt="GitHub go.mod Go version" src="https://img.shields.io/github/go-mod/go-version/MacroPower/wakatime_exporter">
