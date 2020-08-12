@@ -1,3 +1,5 @@
+<a href="#"><img src="img/waka_header.png"></a>
+
 <h2 align="center">:construction: wakatime_exporter :construction:</h2>
 <p align="center">
   <a href="#" target="blank">
@@ -25,7 +27,7 @@ _wakatime_exporter_ is a Prometheus exporter for Wakatime statistics. It intends
 
 [Click here](https://grafana.com/grafana/dashboards/12790) for a simple dashboard you can use to get started.
 
-<a href="#"><img src="example.png"></a>
+<a href="#"><img src="img/example.png"></a>
 
 ## Usage
 
