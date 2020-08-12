@@ -48,7 +48,7 @@ type Exporter exporter.Exporter
 
 // NewExporter creates the Leader exporter
 func NewExporter(baseURI *url.URL, user string, token string, sslVerify bool, timeout time.Duration, logger log.Logger) *Exporter {
-	var fetchStat func(url.URL, string) (io.ReadCloser, error)
+	var fetchStat func(url.URL, string, url.Values) (io.ReadCloser, error)
 	fetchStat = exporter.FetchHTTP(token, sslVerify, timeout, logger)
 
 	return &Exporter{
@@ -118,7 +118,10 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 
 	e.TotalScrapes.Inc()
 
-	body, fetchErr := e.FetchStat(*e.URI, endpoint)
+	params := url.Values{}
+	params.Add("cache", "false")
+
+	body, fetchErr := e.FetchStat(*e.URI, endpoint, params)
 	if fetchErr != nil {
 		return fetchErr
 	}

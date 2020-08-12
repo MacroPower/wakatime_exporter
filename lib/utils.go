@@ -62,16 +62,17 @@ func BoolToBinary(b bool) string {
 }
 
 // FetchHTTP is a generic fetch method for Wakatime API endpoints
-func FetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.Logger) func(uri url.URL, subPath string) (io.ReadCloser, error) {
+func FetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.Logger) func(uri url.URL, subPath string, params url.Values) (io.ReadCloser, error) {
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !sslVerify}}
 	client := http.Client{
 		Timeout:   timeout,
 		Transport: tr,
 	}
 	sEnc := b64.StdEncoding.EncodeToString([]byte(token))
-	return func(uri url.URL, subPath string) (io.ReadCloser, error) {
+	return func(uri url.URL, subPath string, params url.Values) (io.ReadCloser, error) {
 
 		uri.Path = path.Join(uri.Path, subPath)
+		uri.RawQuery = params.Encode()
 		url := uri.String()
 
 		level.Info(logger).Log("msg", "Scraping Wakatime", "path", subPath, "url", url)

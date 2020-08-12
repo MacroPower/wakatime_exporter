@@ -47,9 +47,9 @@ var (
 // Exporter is the local definition of Exporter
 type Exporter exporter.Exporter
 
-// NewExporter creates the Summary exporter
+// NewExporter creates the AllTime exporter
 func NewExporter(baseURI *url.URL, user string, token string, sslVerify bool, timeout time.Duration, logger log.Logger) *Exporter {
-	var fetchStat func(url.URL, string) (io.ReadCloser, error)
+	var fetchStat func(url.URL, string, url.Values) (io.ReadCloser, error)
 	fetchStat = exporter.FetchHTTP(token, sslVerify, timeout, logger)
 
 	return &Exporter{
@@ -121,7 +121,10 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 
 	userURL := exporter.UserPath(e.URI, e.User)
 
-	body, fetchErr := e.FetchStat(userURL, endpoint)
+	params := url.Values{}
+	params.Add("cache", "false")
+
+	body, fetchErr := e.FetchStat(userURL, endpoint, params)
 	if fetchErr != nil {
 		return fetchErr
 	}

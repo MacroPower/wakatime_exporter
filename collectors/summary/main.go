@@ -54,7 +54,7 @@ type Exporter exporter.Exporter
 
 // NewExporter creates the Summary exporter
 func NewExporter(baseURI *url.URL, user string, token string, sslVerify bool, timeout time.Duration, logger log.Logger) *Exporter {
-	var fetchStat func(url.URL, string) (io.ReadCloser, error)
+	var fetchStat func(url.URL, string, url.Values) (io.ReadCloser, error)
 	fetchStat = exporter.FetchHTTP(token, sslVerify, timeout, logger)
 
 	return &Exporter{
@@ -127,11 +127,11 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 	params := url.Values{}
 	params.Add("start", "today")
 	params.Add("end", "today")
+	params.Add("cache", "false")
 
 	userURL := exporter.UserPath(e.URI, e.User)
-	userURL.RawQuery = params.Encode()
 
-	body, fetchErr := e.FetchStat(userURL, endpoint)
+	body, fetchErr := e.FetchStat(userURL, endpoint, params)
 	if fetchErr != nil {
 		return fetchErr
 	}

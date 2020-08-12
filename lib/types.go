@@ -33,7 +33,7 @@ type Exporter struct {
 	URI            *url.URL
 	Endpoint, User string
 	Mutex          sync.RWMutex
-	FetchStat      func(url.URL, string) (io.ReadCloser, error)
+	FetchStat      func(url.URL, string, url.Values) (io.ReadCloser, error)
 
 	Up                          prometheus.Gauge
 	TotalScrapes, QueryFailures prometheus.Counter
