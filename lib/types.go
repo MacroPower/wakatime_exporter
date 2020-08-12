@@ -23,18 +23,17 @@ import (
 	"io"
 	"net/url"
 	"sync"
-	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+// Exporter is a struct for all collector exporters
 type Exporter struct {
 	URI            *url.URL
 	Endpoint, User string
 	Mutex          sync.RWMutex
-	FetchStat      func(url.URL, string, string) (io.ReadCloser, error)
-	TZOffset       time.Duration
+	FetchStat      func(url.URL, string) (io.ReadCloser, error)
 
 	Up                          prometheus.Gauge
 	TotalScrapes, QueryFailures prometheus.Counter

@@ -45,7 +45,6 @@ func main() {
 		wakaScrapeURI = kingpin.Flag("wakatime.scrape-uri", "Base path to query for Wakatime data.").Default("https://wakatime.com/api/v1").Envar("WAKA_SCRAPE_URI").String()
 		wakaUser      = kingpin.Flag("wakatime.user", "User to query for Wakatime data.").Default("current").Envar("WAKA_USER").String()
 		wakaToken     = kingpin.Flag("wakatime.api-key", "Token to use when getting stats from Wakatime.").Required().Envar("WAKA_API_KEY").String()
-		wakaOffset    = kingpin.Flag("wakatime.t-offset", "Time offset (from UTC) for managing Wakatime dates.").Default("0s").Envar("WAKA_TIME_OFFSET").Duration()
 		wakaTimeout   = kingpin.Flag("wakatime.timeout", "Timeout for trying to get stats from Wakatime.").Default("5s").Envar("WAKA_TIMEOUT").Duration()
 		wakaSSLVerify = kingpin.Flag("wakatime.ssl-verify", "Flag that enables SSL certificate verification for the scrape URI.").Default("true").Envar("WAKA_SSL_VERIFY").Bool()
 	)
@@ -67,10 +66,10 @@ func main() {
 	}
 
 	exporter := version.NewCollector("wakatime_exporter")
-	summaryExporter := summary.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
-	leaderExporter := leader.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
-	goalExporter := goal.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
-	alltimeExporter := alltime.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaOffset, *wakaTimeout, logger)
+	summaryExporter := summary.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaTimeout, logger)
+	leaderExporter := leader.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaTimeout, logger)
+	goalExporter := goal.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaTimeout, logger)
+	alltimeExporter := alltime.NewExporter(wakaBaseURI, *wakaUser, *wakaToken, *wakaSSLVerify, *wakaTimeout, logger)
 
 	prometheus.MustRegister(exporter, summaryExporter, leaderExporter, goalExporter, alltimeExporter)
 
