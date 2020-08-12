@@ -62,24 +62,19 @@ func BoolToBinary(b bool) string {
 }
 
 // FetchHTTP is a generic fetch method for Wakatime API endpoints
-func FetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.Logger) func(uri url.URL, dateUTC string, subPath string) (io.ReadCloser, error) {
+func FetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.Logger) func(uri url.URL, subPath string) (io.ReadCloser, error) {
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !sslVerify}}
 	client := http.Client{
 		Timeout:   timeout,
 		Transport: tr,
 	}
 	sEnc := b64.StdEncoding.EncodeToString([]byte(token))
-	return func(uri url.URL, dateUTC string, subPath string) (io.ReadCloser, error) {
-		level.Info(logger).Log("msg", "Scraping Wakatime", "date", dateUTC, "path", subPath)
-
-		params := url.Values{}
-		params.Add("start", dateUTC)
-		params.Add("end", dateUTC)
+	return func(uri url.URL, subPath string) (io.ReadCloser, error) {
 
 		uri.Path = path.Join(uri.Path, subPath)
-		uri.RawQuery = params.Encode()
-
 		url := uri.String()
+
+		level.Info(logger).Log("msg", "Scraping Wakatime", "path", subPath, "url", url)
 
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
@@ -118,11 +113,6 @@ func ReadAndUnmarshal(body io.ReadCloser, object interface{}) error {
 	}
 
 	return nil
-}
-
-// GetDate applies any offsets and returns the current YYYY-MM-DD date
-func GetDate(offset time.Duration) string {
-	return time.Now().UTC().Add(offset).Format("2006-01-02")
 }
 
 // UserPath appends the User path to a given URL

@@ -48,8 +48,8 @@ var (
 type Exporter exporter.Exporter
 
 // NewExporter creates the Summary exporter
-func NewExporter(baseURI *url.URL, user string, token string, sslVerify bool, tzOffset time.Duration, timeout time.Duration, logger log.Logger) *Exporter {
-	var fetchStat func(url.URL, string, string) (io.ReadCloser, error)
+func NewExporter(baseURI *url.URL, user string, token string, sslVerify bool, timeout time.Duration, logger log.Logger) *Exporter {
+	var fetchStat func(url.URL, string) (io.ReadCloser, error)
 	fetchStat = exporter.FetchHTTP(token, sslVerify, timeout, logger)
 
 	return &Exporter{
@@ -57,7 +57,6 @@ func NewExporter(baseURI *url.URL, user string, token string, sslVerify bool, tz
 		Endpoint:  endpoint,
 		User:      user,
 		FetchStat: fetchStat,
-		TZOffset:  tzOffset,
 		Up: prometheus.NewGauge(prometheus.GaugeOpts{
 			Namespace: namespace,
 			Subsystem: subsystem,
@@ -120,11 +119,9 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 
 	e.TotalScrapes.Inc()
 
-	dateUTC := exporter.GetDate(e.TZOffset)
 	userURL := exporter.UserPath(e.URI, e.User)
 
-	body, fetchErr := e.FetchStat(userURL, dateUTC, endpoint)
-	defer body.Close()
+	body, fetchErr := e.FetchStat(userURL, endpoint)
 	if fetchErr != nil {
 		return fetchErr
 	}
@@ -134,6 +131,8 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 	if err != nil {
 		return err
 	}
+
+	defer body.Close()
 
 	level.Info(e.Logger).Log(
 		"msg", "Collecting all time from Wakatime",
