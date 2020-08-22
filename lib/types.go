@@ -30,14 +30,14 @@ import (
 
 // Exporter is a struct for all collector exporters
 type Exporter struct {
-	URI            *url.URL
-	Endpoint, User string
-	Mutex          sync.RWMutex
-	FetchStat      func(url.URL, string, url.Values) (io.ReadCloser, error)
+	URI                       *url.URL
+	Endpoint, User, Subsystem string
+	Mutex                     sync.RWMutex
+	FetchStat                 func(url.URL, string, url.Values) (io.ReadCloser, error)
 
-	Up                          prometheus.Gauge
-	TotalScrapes, QueryFailures prometheus.Counter
-	Logger                      log.Logger
+	DefaultMetrics MetricDefaults
+	ExportMetric   func(m MetricInfo, ch chan<- prometheus.Metric, value float64, labels ...string)
+	Logger         log.Logger
 }
 
 // Metrics maps all MetricInfo
@@ -47,4 +47,11 @@ type Metrics map[string]MetricInfo
 type MetricInfo struct {
 	Desc *prometheus.Desc
 	Type prometheus.ValueType
+}
+
+// MetricDefaults contains the default metrics exported by each collector
+type MetricDefaults struct {
+	Up            prometheus.Gauge
+	TotalScrapes  prometheus.Counter
+	QueryFailures prometheus.Counter
 }

@@ -21,7 +21,6 @@ package alltime
 
 import (
 	"errors"
-	"io"
 	"net/url"
 	"time"
 
@@ -33,7 +32,6 @@ import (
 )
 
 const (
-	namespace = "wakatime"
 	subsystem = "alltime"
 	endpoint  = "all_time_since_today"
 )
@@ -49,33 +47,18 @@ type Exporter exporter.Exporter
 
 // NewExporter creates the AllTime exporter
 func NewExporter(baseURI *url.URL, user string, token string, sslVerify bool, timeout time.Duration, logger log.Logger) *Exporter {
-	var fetchStat func(url.URL, string, url.Values) (io.ReadCloser, error)
-	fetchStat = exporter.FetchHTTP(token, sslVerify, timeout, logger)
+	fetchStat := exporter.FetchHTTP(token, sslVerify, timeout, logger)
+	defaultMetrics := exporter.DefaultMetrics(subsystem)
 
 	return &Exporter{
-		URI:       baseURI,
-		Endpoint:  endpoint,
-		User:      user,
-		FetchStat: fetchStat,
-		Up: prometheus.NewGauge(prometheus.GaugeOpts{
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Name:      "up",
-			Help:      "Was the last scrape of wakatime successful.",
-		}),
-		TotalScrapes: prometheus.NewCounter(prometheus.CounterOpts{
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Name:      "exporter_scrapes_total",
-			Help:      "Current total wakatime scrapes.",
-		}),
-		QueryFailures: prometheus.NewCounter(prometheus.CounterOpts{
-			Namespace: namespace,
-			Subsystem: subsystem,
-			Name:      "exporter_query_failures_total",
-			Help:      "Number of errors.",
-		}),
-		Logger: logger,
+		URI:            baseURI,
+		Endpoint:       endpoint,
+		Subsystem:      subsystem,
+		User:           user,
+		FetchStat:      fetchStat,
+		DefaultMetrics: defaultMetrics,
+		ExportMetric:   exporter.ExportMetric,
+		Logger:         logger,
 	}
 }
 
@@ -86,9 +69,9 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 		ch <- m.Desc
 	}
 
-	ch <- e.Up.Desc()
-	ch <- e.TotalScrapes.Desc()
-	ch <- e.QueryFailures.Desc()
+	ch <- e.DefaultMetrics.Up.Desc()
+	ch <- e.DefaultMetrics.TotalScrapes.Desc()
+	ch <- e.DefaultMetrics.QueryFailures.Desc()
 }
 
 // Collect all the metrics.
@@ -100,24 +83,20 @@ func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	up := float64(1)
 	if err != nil {
 		up = float64(0)
-		e.QueryFailures.Inc()
+		e.DefaultMetrics.QueryFailures.Inc()
 		level.Error(e.Logger).Log("msg", "Can't scrape wakatime", "subsystem", subsystem, "err", err)
 	}
-	e.Up.Set(up)
+	e.DefaultMetrics.Up.Set(up)
 
-	ch <- e.Up
-	ch <- e.TotalScrapes
-	ch <- e.QueryFailures
-}
-
-func (e *Exporter) exportMetric(m exporter.MetricInfo, ch chan<- prometheus.Metric, value float64, labels ...string) {
-	ch <- prometheus.MustNewConstMetric(m.Desc, m.Type, value, labels...)
+	ch <- e.DefaultMetrics.Up
+	ch <- e.DefaultMetrics.TotalScrapes
+	ch <- e.DefaultMetrics.QueryFailures
 }
 
 func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 	level.Debug(e.Logger).Log("msg", "Starting scrape")
 
-	e.TotalScrapes.Inc()
+	e.DefaultMetrics.TotalScrapes.Inc()
 
 	userURL := exporter.UserPath(e.URI, e.User)
 
@@ -142,7 +121,7 @@ func (e *Exporter) scrape(ch chan<- prometheus.Metric) error {
 		"IsUpToDate", alltimeStats.Data.IsUpToDate,
 	)
 	if alltimeStats.Data.IsUpToDate == true {
-		e.exportMetric(wakaMetrics["total"], ch, alltimeStats.Data.TotalSeconds)
+		e.ExportMetric(wakaMetrics["total"], ch, alltimeStats.Data.TotalSeconds)
 	} else {
 		return errors.New("skipped scrape of alltime metrics because they were not up to date")
 	}

@@ -124,3 +124,32 @@ func UserPath(uri *url.URL, user string) url.URL {
 	userURL.Path = userPath
 	return userURL
 }
+
+// DefaultMetrics returns MetricDefaults
+func DefaultMetrics(subsystem string) MetricDefaults {
+	return MetricDefaults{
+		Up: prometheus.NewGauge(prometheus.GaugeOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "up",
+			Help:      "Was the last scrape of wakatime successful.",
+		}),
+		TotalScrapes: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "exporter_scrapes_total",
+			Help:      "Current total wakatime scrapes.",
+		}),
+		QueryFailures: prometheus.NewCounter(prometheus.CounterOpts{
+			Namespace: namespace,
+			Subsystem: subsystem,
+			Name:      "exporter_query_failures_total",
+			Help:      "Number of errors.",
+		}),
+	}
+}
+
+// ExportMetric wraps MustNewConstMetric
+func ExportMetric(m MetricInfo, ch chan<- prometheus.Metric, value float64, labels ...string) {
+	ch <- prometheus.MustNewConstMetric(m.Desc, m.Type, value, labels...)
+}
