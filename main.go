@@ -152,20 +152,25 @@ func UserPath(uri *url.URL, user string) url.URL {
 
 func main() {
 	var (
+		disableDefaultCollectors = kingpin.Flag(
+			"collector.disable-defaults",
+			"Set all collectors to disabled by default.",
+		).Default("false").Envar("WAKA_DISABLE_DEFAULT_COLLECTORS").Bool()
+
 		listenAddress = kingpin.Flag(
 			"web.listen-address",
-			"Address to listen on for web interface and telemetry.",
-		).Default(":9212").Envar("WAKA_LISTEN_ADDR").String()
+			"Address to listen on for web interface and metrics.",
+		).Default(":9212").Envar("WAKA_LISTEN_ADDRESS").String()
 
 		metricsPath = kingpin.Flag(
-			"web.telemetry-path",
+			"web.metrics-path",
 			"Path under which to expose metrics.",
 		).Default("/metrics").Envar("WAKA_METRICS_PATH").String()
 
 		disableExporterMetrics = kingpin.Flag(
 			"web.disable-exporter-metrics",
 			"Exclude metrics about the exporter itself (promhttp_*, process_*, go_*).",
-		).Bool()
+		).Default("false").Envar("WAKA_DISABLE_EXPORTER_METRICS").Bool()
 
 		wakaScrapeURI = kingpin.Flag(
 			"wakatime.scrape-uri",
@@ -191,11 +196,6 @@ func main() {
 			"wakatime.ssl-verify",
 			"Flag that enables SSL certificate verification for the scrape URI.",
 		).Default("true").Envar("WAKA_SSL_VERIFY").Bool()
-
-		disableDefaultCollectors = kingpin.Flag(
-			"collector.disable-defaults",
-			"Set all collectors to disabled by default.",
-		).Default("false").Bool()
 	)
 
 	promlogConfig := &promlog.Config{}
