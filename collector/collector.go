@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"sync"
 	"time"
 
@@ -82,8 +83,9 @@ func registerCollector(collector string, isDefaultEnabled bool, factory func(in 
 	flagName := fmt.Sprintf("collector.%s", collector)
 	flagHelp := fmt.Sprintf("Enable the %s collector (default: %s).", collector, helpDefaultState)
 	defaultValue := fmt.Sprintf("%v", isDefaultEnabled)
+	envar := "WAKA_COLLECTOR_" + strings.ToUpper(collector)
 
-	flag := kingpin.Flag(flagName, flagHelp).Default(defaultValue).Action(collectorFlagAction(collector)).Bool()
+	flag := kingpin.Flag(flagName, flagHelp).Default(defaultValue).Envar(envar).Action(collectorFlagAction(collector)).Bool()
 	collectorState[collector] = flag
 
 	factories[collector] = factory
