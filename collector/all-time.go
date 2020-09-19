@@ -27,7 +27,7 @@ import (
 
 const (
 	allTimeCollector = "all-time"
-	allTimeSubsystem = "alltime"
+	allTimeSubsystem = "cumulative"
 	allTimeEndpoint  = "all_time_since_today"
 )
 
@@ -46,7 +46,7 @@ func init() {
 func NewAllTimeCollector(in CommonInputs, logger log.Logger) (Collector, error) {
 	return &alltimeCollector{
 		total: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, allTimeSubsystem, "cumulative_seconds_total"),
+			prometheus.BuildFQName(namespace, allTimeSubsystem, "seconds_total"),
 			"Total seconds (all time).",
 			nil, nil,
 		),

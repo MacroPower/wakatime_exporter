@@ -26,7 +26,7 @@ import (
 
 const (
 	leaderCollectorName = "leader"
-	leaderSubsystem     = "leader"
+	leaderSubsystem     = "leaderboard"
 	leaderEndpoint      = "leaders"
 )
 

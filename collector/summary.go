@@ -26,7 +26,7 @@ import (
 
 const (
 	summaryCollectorName = "summary"
-	summarySubsystem     = "summary"
+	summaryMetricName    = "seconds_total"
 	summaryEndpoint      = "summaries"
 )
 
@@ -51,37 +51,37 @@ func init() {
 func NewSummaryCollector(in CommonInputs, logger log.Logger) (Collector, error) {
 	return &summaryCollector{
 		total: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, summarySubsystem, "seconds_total"),
+			prometheus.BuildFQName(namespace, "", summaryMetricName),
 			"Total seconds.",
 			nil, nil,
 		),
 		language: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, summarySubsystem, "language_seconds_total"),
+			prometheus.BuildFQName(namespace, "language", summaryMetricName),
 			"Total seconds for each language.",
 			[]string{"name"}, nil,
 		),
 		operatingSystem: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, summarySubsystem, "operating_system_seconds_total"),
+			prometheus.BuildFQName(namespace, "operating_system", summaryMetricName),
 			"Total seconds for each operating system.",
 			[]string{"name"}, nil,
 		),
 		machine: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, summarySubsystem, "machine_seconds_total"),
+			prometheus.BuildFQName(namespace, "machine", summaryMetricName),
 			"Total seconds for each machine.",
 			[]string{"name", "id"}, nil,
 		),
 		editor: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, summarySubsystem, "editor_seconds_total"),
+			prometheus.BuildFQName(namespace, "editor", summaryMetricName),
 			"Total seconds for each editor.",
 			[]string{"name"}, nil,
 		),
 		project: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, summarySubsystem, "project_seconds_total"),
+			prometheus.BuildFQName(namespace, "project", summaryMetricName),
 			"Total seconds for each project.",
 			[]string{"name"}, nil,
 		),
 		category: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, summarySubsystem, "category_seconds_total"),
+			prometheus.BuildFQName(namespace, "category", summaryMetricName),
 			"Total seconds for each category.",
 			[]string{"name"}, nil,
 		),

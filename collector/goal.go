@@ -52,17 +52,17 @@ func init() {
 func NewGoalCollector(in CommonInputs, logger log.Logger) (Collector, error) {
 	return &goalCollector{
 		goalSeconds: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, goalSubsystem, "goal_seconds"),
+			prometheus.BuildFQName(namespace, goalSubsystem, "seconds"),
 			"The Goal.",
 			[]string{"name", "id", "type", "delta"}, nil,
 		),
 		goalProgress: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, goalSubsystem, "goal_progress"),
+			prometheus.BuildFQName(namespace, goalSubsystem, "progress"),
 			"Progress towards the goal.",
 			[]string{"name", "id", "type", "delta"}, nil,
 		),
 		goalInfo: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, goalSubsystem, "goal_info"),
+			prometheus.BuildFQName(namespace, goalSubsystem, "info"),
 			"Information about the goal.",
 			[]string{"name", "id", "ignore_zero_days", "is_enabled", "is_inverse", "is_snoozed", "is_tweeting"}, nil,
 		),
