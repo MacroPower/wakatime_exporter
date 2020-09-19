@@ -1,4 +1,5 @@
 <a href="#"><img src="img/waka_header.png"></a>
+
 <h2></h2>
 <p align="center">
   <a href="#" target="blank">
@@ -41,32 +42,43 @@ Provide arguments via parameters:
 usage: wakatime_exporter --wakatime.api-key=WAKATIME.API-KEY [<flags>]
 
 Flags:
-  --help                               Show context-sensitive help.
-  --web.listen-address=":9212"         Address to listen on for web interface and telemetry.
-  --web.telemetry-path="/metrics"      Path under which to expose metrics.
+  --help, -h                     Show context-sensitive help.
+  --collector.all-time           Enable the all-time collector (default: enabled).
+  --collector.goal               Enable the goal collector (default: enabled).
+  --collector.leader             Enable the leader collector (default: enabled).
+  --collector.summary            Enable the summary collector (default: enabled).
+  --collector.disable-defaults   Set all collectors to disabled by default.
+  --web.listen-address=":9212"   Address to listen on for web interface and telemetry.
+  --web.metrics-path="/metrics"  Path under which to expose metrics.
+  --web.disable-exporter-metrics Exclude metrics about the exporter itself (promhttp_*, process_*, go_*).
   --wakatime.scrape-uri="https://wakatime.com/api/v1"
-                                       Base path to query for Wakatime data.
-  --wakatime.user="current"            User to query for Wakatime data.
-  --wakatime.api-key=WAKATIME.API-KEY  Token to use when getting stats from Wakatime.
-  --wakatime.timeout=5s                Timeout for trying to get stats from Wakatime.
-  --wakatime.ssl-verify                Flag that enables SSL certificate verification.
-  --log.level=info                     Only log messages with the given severity or above.
-                                       One of: [debug, info, warn, error]
-  --log.format=logfmt                  Output format of log messages.
-                                       One of: [logfmt, json]
-  --version                            Show application version.
+                                 Base path to query for Wakatime data.
+  --wakatime.user="current"      User to query for Wakatime data.
+  --wakatime.api-key             Token to use when getting stats from Wakatime.
+  --wakatime.timeout=5s          Timeout for trying to get stats from Wakatime.
+  --wakatime.ssl-verify          Flag that enables SSL certificate verification for the scrape URI.
+  --log.level=info               Only log messages with the given severity or above.
+                                 One of: [debug, info, warn, error]
+  --log.format=logfmt            Output format of log messages.
+                                 One of: [logfmt, json]
+  --version                      Show application version.
 ```
 
 and/or via environment variables:
 
 ```
-WAKA_LISTEN_ADDR=":9212"                      # Address to listen on for web interface and telemetry.
+WAKA_LISTEN_ADDRESS=":9212"                   # Address to listen on for web interface and telemetry.
 WAKA_METRICS_PATH="/metrics"                  # Path under which to expose metrics.
 WAKA_SCRAPE_URI="https://wakatime.com/api/v1" # Base path to query for Wakatime data.
 WAKA_USER="current"                           # User to query for Wakatime data.
 WAKA_API_KEY=""                               # Token to use when getting stats from Wakatime.
 WAKA_TIMEOUT="5s"                             # Timeout for trying to get stats from Wakatime.
 WAKA_SSL_VERIFY="true"                        # SSL certificate verification for the scrape URI.
+WAKA_DISABLE_EXPORTER_METRICS="false"         # Exclude metrics about the exporter itself.
+WAKA_COLLECTOR_ALLTIME="true"                 # Enable the all-time collector.
+WAKA_COLLECTOR_GOAL="true"                    # Enable the goal collector.
+WAKA_COLLECTOR_LEADER="true"                  # Enable the leader collector.
+WAKA_COLLECTOR_SUMMARY="true"                 # Enable the summary collector.
 ```
 
 ## Docker
