@@ -1,6 +1,5 @@
 /*
-Copyright 2015 The Prometheus Authors
-Modifications Copyright 2020 Jacob Colvin (MacroPower)
+Copyright 2020 Jacob Colvin (MacroPower)
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
