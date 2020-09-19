@@ -74,3 +74,12 @@ WAKA_SSL_VERIFY="true"                        # SSL certificate verification for
 ```shell
 docker run -p 9212:9212 macropower/wakatime-exporter:latest --wakatime.api-key="YOUR_API_KEY"
 ```
+
+## License
+
+This project was licensed GPL-2.0 from 0.0.0 to 0.0.5.
+
+As of 0.0.6, parts of this application use code from node_exporter, which is licensed APACHE 2.0.
+
+As of 0.0.6, this project in its entirety, excluding any packages found in vendor, is licensed APACHE 2.0.
+Each file in this project has a license header which identifies the copyright for said file.
