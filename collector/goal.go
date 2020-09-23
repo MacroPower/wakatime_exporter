@@ -18,15 +18,11 @@ package collector
 import (
 	"io"
 	"net/url"
+	"strconv"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
-)
-
-const (
-	subsystem = "goal"
-	endpoint  = "goals"
 )
 
 const (
@@ -36,12 +32,11 @@ const (
 )
 
 type goalCollector struct {
-	goalSeconds  *prometheus.Desc
-	goalProgress *prometheus.Desc
-	goalInfo     *prometheus.Desc
-	uri          url.URL
-	fetchStat    func(url.URL, string, url.Values) (io.ReadCloser, error)
-	logger       log.Logger
+	goalThreshold *prometheus.Desc
+	goalProgress  *prometheus.Desc
+	uri           url.URL
+	fetchStat     func(url.URL, string, url.Values) (io.ReadCloser, error)
+	logger        log.Logger
 }
 
 func init() {
@@ -51,20 +46,23 @@ func init() {
 // NewGoalCollector returns a new Collector exposing all-time stats.
 func NewGoalCollector(in CommonInputs, logger log.Logger) (Collector, error) {
 	return &goalCollector{
-		goalSeconds: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, goalSubsystem, "seconds"),
-			"The Goal.",
-			[]string{"name", "id", "type", "delta"}, nil,
+		goalThreshold: prometheus.NewDesc(
+			prometheus.BuildFQName(namespace, goalSubsystem, "threshold_seconds"),
+			"The goal as set through the wakatime interface.",
+			[]string{
+				"name", "id", "type", "delta", "enabled",
+				"ignore_zero_days", "inverse", "snoozed", "tweeting",
+			},
+			nil,
 		),
 		goalProgress: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, goalSubsystem, "progress"),
+			prometheus.BuildFQName(namespace, goalSubsystem, "progress_seconds"),
 			"Progress towards the goal.",
-			[]string{"name", "id", "type", "delta"}, nil,
-		),
-		goalInfo: prometheus.NewDesc(
-			prometheus.BuildFQName(namespace, goalSubsystem, "info"),
-			"Information about the goal.",
-			[]string{"name", "id", "ignore_zero_days", "is_enabled", "is_inverse", "is_snoozed", "is_tweeting"}, nil,
+			[]string{
+				"name", "id", "type", "delta", "enabled",
+				"ignore_zero_days", "inverse", "snoozed", "tweeting",
+			},
+			nil,
 		),
 		uri:       in.URI,
 		fetchStat: FetchHTTP(in.Token, in.SSLVerify, in.Timeout, logger),
@@ -106,29 +104,33 @@ func (c *goalCollector) Update(ch chan<- prometheus.Metric) error {
 		)
 
 		ch <- prometheus.MustNewConstMetric(
-			c.goalSeconds,
+			c.goalThreshold,
 			prometheus.GaugeValue,
 			float64(currentChartData.GoalSeconds),
-			data.Title, data.ID, data.Type, data.Delta,
+			data.Title,
+			data.ID,
+			data.Type,
+			data.Delta,
+			strconv.FormatBool(data.IsEnabled),
+			strconv.FormatBool(data.IgnoreZeroDays),
+			strconv.FormatBool(data.IsInverse),
+			strconv.FormatBool(data.IsSnoozed),
+			strconv.FormatBool(data.IsTweeting),
 		)
 
 		ch <- prometheus.MustNewConstMetric(
 			c.goalProgress,
 			prometheus.CounterValue,
 			currentChartData.ActualSeconds,
-			data.Title, data.ID, data.Type, data.Delta,
-		)
-
-		ch <- prometheus.MustNewConstMetric(
-			c.goalInfo,
-			prometheus.GaugeValue,
-			float64(1),
-			data.Title, data.ID,
-			BoolToBinary(data.IgnoreZeroDays),
-			BoolToBinary(data.IsEnabled),
-			BoolToBinary(data.IsInverse),
-			BoolToBinary(data.IsSnoozed),
-			BoolToBinary(data.IsTweeting),
+			data.Title,
+			data.ID,
+			data.Type,
+			data.Delta,
+			strconv.FormatBool(data.IsEnabled),
+			strconv.FormatBool(data.IgnoreZeroDays),
+			strconv.FormatBool(data.IsInverse),
+			strconv.FormatBool(data.IsSnoozed),
+			strconv.FormatBool(data.IsTweeting),
 		)
 	}
 
