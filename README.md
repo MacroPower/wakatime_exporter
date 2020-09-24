@@ -19,7 +19,12 @@
   </a>
 </p>
 
-_wakatime_exporter_ is a Prometheus exporter for Wakatime statistics. It intends to extend the existing Wakatime ecosystem via allowing users to make use of Prometheus (and therefore any consumers of its API) as companion services alongside the traditional Wakatime web application. This could be anything from including some of your coding statistics in Grafana, to forecasting your coding time with prophet. Sky's the limit!
+_wakatime_exporter_ is a Prometheus exporter for [Wakatime](https://wakatime.com/) statistics.
+It intends to extend the existing Wakatime ecosystem
+via allowing users to make use of Prometheus (and therefore any consumers of its API)
+as companion services alongside the traditional Wakatime web application.
+This could be anything from including some of your coding statistics in Grafana,
+to forecasting your coding time with prophet.
 
 > NOTE: _wakatime_exporter_ is currently in ALPHA. Expect things to break and change.
 
@@ -32,7 +37,8 @@ _wakatime_exporter_ is a Prometheus exporter for Wakatime statistics. It intends
 ## Usage
 
 In most cases, you should only need to provide an API key.
-All other parameters are for advanced use-cases only and you should be able to leave them set to their defaults.
+All other parameters are for advanced use-cases only
+and you should be able to leave them set to their defaults.
 
 You can get your Wakatime API key by visiting: https://wakatime.com/api-key
 
@@ -66,7 +72,7 @@ Flags:
 
 and/or via environment variables:
 
-```
+```shell
 WAKA_LISTEN_ADDRESS=":9212"                   # Address to listen on for web interface and telemetry.
 WAKA_METRICS_PATH="/metrics"                  # Path under which to expose metrics.
 WAKA_SCRAPE_URI="https://wakatime.com/api/v1" # Base path to query for Wakatime data.
@@ -86,6 +92,17 @@ WAKA_COLLECTOR_SUMMARY="true"                 # Enable the summary collector.
 ```shell
 docker run -p 9212:9212 macropower/wakatime-exporter:latest --wakatime.api-key="YOUR_API_KEY"
 ```
+
+## Compatibility
+
+_wakatime_exporter_ is designed to work with [Wakatime](https://wakatime.com/).
+However, you can additionally use any other application
+that is compliant with the [Wakatime API](https://wakatime.com/developers),
+e.g. [wakapi](https://github.com/muety/wakapi),
+via `--wakatime.scrape-uri` or `WAKA_SCRAPE_URI`.
+If said application only implements portions of the Wakatime API,
+you can disable collectors for any non-compliant or non-existent endpoints
+using parameters or environment variables as described in [usage](#usage).
 
 ## License
 
