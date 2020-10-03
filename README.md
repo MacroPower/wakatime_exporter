@@ -108,7 +108,7 @@ using parameters or environment variables as described in [usage](#usage).
 
 This project was licensed GPL-2.0 from 0.0.0 to 0.0.5.
 
-As of 0.0.6, parts of this application use code from node_exporter, which is licensed APACHE 2.0.
+As of version 0.1.0, parts of this application use code from node_exporter, which is licensed APACHE 2.0.
 
-As of 0.0.6, this project in its entirety, excluding any packages found in vendor, is licensed APACHE 2.0.
+As of version 0.1.0, this project in its entirety, excluding any packages found in vendor, is licensed APACHE 2.0.
 Each file in this project has a license header which identifies the copyright for said file.
