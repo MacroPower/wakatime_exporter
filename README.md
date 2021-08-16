@@ -1,4 +1,4 @@
-<a href="#"><img src="img/waka_header.png"></a>
+<a href="#"><img src="docs/img/waka_header.png"></a>
 
 <h2></h2>
 <p align="center">
@@ -28,11 +28,11 @@ to forecasting your coding time with prophet.
 
 > NOTE: _wakatime_exporter_ is currently in ALPHA. Expect things to break and change.
 
-[Click here](METRICS.md) to see an example of the exported metrics.
+[Click here](docs/METRICS.md) to see an example of the exported metrics.
 
 [Click here](https://grafana.com/grafana/dashboards/12790) for a simple dashboard you can use to get started.
 
-<a href="#"><img src="img/example.png"></a>
+<a href="#"><img src="docs/img/example.png"></a>
 
 ## Usage
 
@@ -91,6 +91,18 @@ WAKA_COLLECTOR_SUMMARY="true"                 # Enable the summary collector.
 
 ```shell
 docker run -p 9212:9212 macropower/wakatime-exporter:latest --wakatime.api-key="YOUR_API_KEY"
+```
+
+Or use docker-compose:
+
+```shell
+# Linux & Darwin
+WAKA_API_KEY="YOUR_API_KEY" docker-compose up
+```
+
+```powershell
+# Windows
+$env:WAKA_API_KEY="YOUR_API_KEY"; docker-compose up
 ```
 
 ## Compatibility

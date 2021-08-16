@@ -1,0 +1,36 @@
+version: '3'
+
+networks:
+  wakatime-exporter:
+
+services:
+  wakatime-exporter:
+    image: macropower/wakatime-exporter:latest
+    ports:
+      - '9212:9212'
+    environment:
+      WAKA_API_KEY: '${WAKA_API_KEY}'
+    networks:
+      - wakatime-exporter
+
+  grafana:
+    image: grafana/grafana:8.1.1
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./docs/dashboards:/etc/dashboards
+      - ./docs/provisioning/dashboards.yaml:/etc/grafana/provisioning/dashboards/dashboards.yaml
+      - ./docs/provisioning/datasources.yaml:/etc/grafana/provisioning/datasources/datasources.yaml
+    networks:
+      - wakatime-exporter
+
+  prometheus:
+    image: prom/prometheus:v2.29.1
+    ports:
+      - 9090:9090
+    volumes:
+      - ./docs/example/prometheus.yaml:/etc/prometheus/prometheus.yaml
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yaml'
+    networks:
+      - wakatime-exporter
