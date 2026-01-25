@@ -21,7 +21,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"path"
@@ -81,7 +80,7 @@ func FetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.L
 
 // ReadAndUnmarshal reads the JSON response body and unmarshals the response
 func ReadAndUnmarshal(body io.ReadCloser, object interface{}) error {
-	respBody, readErr := ioutil.ReadAll(body)
+	respBody, readErr := io.ReadAll(body)
 
 	if readErr != nil {
 		return readErr
