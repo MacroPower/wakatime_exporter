@@ -90,7 +90,7 @@ jobs:
           printf '%b' "$SUMMARY" >> $GITHUB_STEP_SUMMARY
 
       - name: Run Go lint
-        uses: golangci/golangci-lint-action@v6
+        uses: golangci/golangci-lint-action@v7
         with:
           version: v2.1.6
           install-mode: binary
