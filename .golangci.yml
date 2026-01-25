@@ -7,13 +7,11 @@ linters:
   default: standard
   enable:
     - errcheck
-
-linters-settings:
-  errcheck:
-    check-type-assertions: true
-
-issues:
-  exclude-rules:
-    - path: _test\.go
-      linters:
-        - errcheck
+  settings:
+    errcheck:
+      check-type-assertions: true
+  exclusions:
+    rules:
+      - path: _test\.go
+        linters:
+          - errcheck
