@@ -92,8 +92,8 @@ jobs:
       - name: Run Go lint
         uses: golangci/golangci-lint-action@v6
         with:
-          version: latest
-          install-mode: goinstall
+          version: v1.64.5
+          install-mode: binary
 
       - name: Build binary
         run: |
