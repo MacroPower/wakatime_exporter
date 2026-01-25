@@ -107,10 +107,10 @@ func (c *summaryCollector) Update(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
 	for i, data := range summaryStats.Data {
-		level.Info(c.logger).Log(
+		_ = level.Info(c.logger).Log(
 			"msg", "Collecting summary from Wakatime",
 			"obj", i,
 			"start", data.Range.Start.String(),
@@ -122,7 +122,7 @@ func (c *summaryCollector) Update(ch chan<- prometheus.Metric) error {
 
 	resultLength := len(summaryStats.Data)
 	if resultLength != 1 {
-		level.Error(c.logger).Log("msg", "length of results is incorrect", "size", resultLength)
+		_ = level.Error(c.logger).Log("msg", "length of results is incorrect", "size", resultLength)
 	}
 	todaySummaryStats := summaryStats.Data[0]
 

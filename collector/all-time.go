@@ -70,13 +70,13 @@ func (c *alltimeCollector) Update(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
-	level.Info(c.logger).Log(
+	_ = level.Info(c.logger).Log(
 		"msg", "Collecting all-time from Wakatime",
 		"IsUpToDate", alltimeStats.Data.IsUpToDate,
 	)
-	if alltimeStats.Data.IsUpToDate == true {
+	if alltimeStats.Data.IsUpToDate {
 		ch <- prometheus.MustNewConstMetric(
 			c.total,
 			prometheus.CounterValue,

@@ -54,7 +54,7 @@ func FetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.L
 		uri.RawQuery = params.Encode()
 		url := uri.String()
 
-		level.Info(logger).Log("msg", "Scraping Wakatime", "path", subPath, "url", url)
+		_ = level.Info(logger).Log("msg", "Scraping Wakatime", "path", subPath, "url", url)
 
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
@@ -70,8 +70,8 @@ func FetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.L
 			return nil, err
 		}
 
-		if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
-			resp.Body.Close()
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			_ = resp.Body.Close()
 			return nil, fmt.Errorf("HTTP status %d", resp.StatusCode)
 		}
 		return resp.Body, nil
@@ -86,10 +86,8 @@ func ReadAndUnmarshal(body io.ReadCloser, object interface{}) error {
 		return readErr
 	}
 
-	var jsonErr error
-	jsonErr = json.Unmarshal(respBody, &object)
-	if jsonErr != nil {
-		return jsonErr
+	if err := json.Unmarshal(respBody, &object); err != nil {
+		return err
 	}
 
 	return nil

@@ -97,12 +97,12 @@ func main() {
 	if *disableDefaultCollectors {
 		collector.DisableDefaultCollectors()
 	}
-	level.Info(logger).Log("msg", "Starting wakatime_exporter", "version", version.Info())
-	level.Info(logger).Log("msg", "Build context", "build_context", version.BuildContext())
+	_ = level.Info(logger).Log("msg", "Starting wakatime_exporter", "version", version.Info())
+	_ = level.Info(logger).Log("msg", "Build context", "build_context", version.BuildContext())
 
 	wakaBaseURI, err := url.Parse(*wakaScrapeURI)
 	if err != nil {
-		level.Error(logger).Log("msg", "Error parsing URL", "err", err)
+		_ = level.Error(logger).Log("msg", "Error parsing URL", "err", err)
 		os.Exit(1)
 	}
 
@@ -114,7 +114,7 @@ func main() {
 		Timeout:   *wakaTimeout,
 	}, !*disableExporterMetrics, logger))
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
+		_, _ = w.Write([]byte(`<html>
 			<head><title>Wakatime Exporter</title></head>
 			<body>
 			<h1>Wakatime Exporter</h1>
@@ -123,9 +123,9 @@ func main() {
 			</html>`))
 	})
 
-	level.Info(logger).Log("msg", "Listening on", "address", *listenAddress)
+	_ = level.Info(logger).Log("msg", "Listening on", "address", *listenAddress)
 	if err := http.ListenAndServe(*listenAddress, nil); err != nil {
-		level.Error(logger).Log("msg", "Error starting HTTP server", "err", err)
+		_ = level.Error(logger).Log("msg", "Error starting HTTP server", "err", err)
 		os.Exit(1)
 	}
 }

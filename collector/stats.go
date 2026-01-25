@@ -129,17 +129,17 @@ func (c *statsCollector) Update(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
 	data := statsData.Data
 	rangeLabel := *statsRange
 
 	// Check if data is up to date
 	if !data.IsUpToDate {
-		level.Warn(c.logger).Log("msg", "Stats data is not up to date", "status", data.Status, "percent_calculated", data.PercentCalculated)
+		_ = level.Warn(c.logger).Log("msg", "Stats data is not up to date", "status", data.Status, "percent_calculated", data.PercentCalculated)
 	}
 
-	level.Info(c.logger).Log(
+	_ = level.Info(c.logger).Log(
 		"msg", "Collecting stats from Wakatime",
 		"range", rangeLabel,
 		"is_up_to_date", data.IsUpToDate,

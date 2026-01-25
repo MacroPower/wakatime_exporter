@@ -94,7 +94,7 @@ func TestFetchHTTP(t *testing.T) {
 				}
 
 				w.WriteHeader(tt.responseCode)
-				w.Write([]byte(tt.responseBody))
+				_, _ = w.Write([]byte(tt.responseBody))
 			}))
 			defer server.Close()
 
@@ -118,7 +118,7 @@ func TestFetchHTTP(t *testing.T) {
 					t.Errorf("Unexpected error: %v", err)
 				}
 				if body != nil {
-					body.Close()
+					_ = body.Close()
 				}
 			}
 		})
@@ -170,7 +170,7 @@ func TestFetchHTTPTimeout(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(200 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"data": "test"}`))
+		_, _ = w.Write([]byte(`{"data": "test"}`))
 	}))
 	defer server.Close()
 

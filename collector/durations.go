@@ -95,7 +95,7 @@ func (c *durationsCollector) Update(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
 	// Aggregate all duration data
 	var totalAIAdded, totalAIDeleted, totalHumanAdded, totalHumanDeleted int
@@ -109,7 +109,7 @@ func (c *durationsCollector) Update(ch chan<- prometheus.Metric) error {
 		totalDuration += duration.Duration
 	}
 
-	level.Info(c.logger).Log(
+	_ = level.Info(c.logger).Log(
 		"msg", "Collecting durations from Wakatime",
 		"duration_count", len(durationsData.Data),
 		"ai_lines_added", totalAIAdded,

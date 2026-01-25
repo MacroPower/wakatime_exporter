@@ -84,9 +84,9 @@ func (c *goalCollector) Update(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
-	level.Info(c.logger).Log(
+	_ = level.Info(c.logger).Log(
 		"msg", "Collecting goals from Wakatime",
 		"total", goalStats.Total,
 		"pages", goalStats.TotalPages,
@@ -95,7 +95,7 @@ func (c *goalCollector) Update(ch chan<- prometheus.Metric) error {
 		// the last element should be the most recent data
 		currentChartData := data.ChartData[len(data.ChartData)-1]
 
-		level.Info(c.logger).Log(
+		_ = level.Info(c.logger).Log(
 			"msg", "Collecting goal from Wakatime",
 			"obj", i,
 			"start", currentChartData.Range.Start,

@@ -69,9 +69,9 @@ func (c *leaderCollector) Update(ch chan<- prometheus.Metric) error {
 		return err
 	}
 
-	defer body.Close()
+	defer func() { _ = body.Close() }()
 
-	level.Info(c.logger).Log(
+	_ = level.Info(c.logger).Log(
 		"msg", "Collecting rank from Wakatime",
 		"page", leaderStats.Page,
 		"updated", leaderStats.ModifiedAt,

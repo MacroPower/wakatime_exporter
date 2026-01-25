@@ -66,7 +66,7 @@ func newHandler(commonInputs collector.CommonInputs, includeExporterMetrics bool
 // ServeHTTP implements http.Handler.
 func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	filters := r.URL.Query()["collect[]"]
-	level.Debug(h.logger).Log("msg", "collect query:", "filters", filters)
+	_ = level.Debug(h.logger).Log("msg", "collect query:", "filters", filters)
 
 	if len(filters) == 0 {
 		// No filters, use the prepared unfiltered handler.
@@ -76,9 +76,9 @@ func (h *handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// To serve filtered metrics, we create a filtering handler on the fly.
 	filteredHandler, err := h.innerHandler(filters...)
 	if err != nil {
-		level.Warn(h.logger).Log("msg", "Couldn't create filtered metrics handler:", "err", err)
+		_ = level.Warn(h.logger).Log("msg", "Couldn't create filtered metrics handler:", "err", err)
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(fmt.Sprintf("Couldn't create filtered metrics handler: %s", err)))
+		_, _ = fmt.Fprintf(w, "Couldn't create filtered metrics handler: %s", err)
 		return
 	}
 	filteredHandler.ServeHTTP(w, r)
@@ -98,14 +98,14 @@ func (h *handler) innerHandler(filters ...string) (http.Handler, error) {
 	// Only log the creation of an unfiltered handler, which should happen
 	// only once upon startup.
 	if len(filters) == 0 {
-		level.Info(h.logger).Log("msg", "Enabled collectors")
+		_ = level.Info(h.logger).Log("msg", "Enabled collectors")
 		collectors := []string{}
 		for n := range nc.Collectors {
 			collectors = append(collectors, n)
 		}
 		sort.Strings(collectors)
 		for _, c := range collectors {
-			level.Info(h.logger).Log("collector", c)
+			_ = level.Info(h.logger).Log("collector", c)
 		}
 	}
 
