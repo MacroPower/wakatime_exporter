@@ -3,14 +3,14 @@ name: CI
 on:
   push:
     branches:
-      - main
+      - master
     paths-ignore:
       - 'docs/**'
       - '.claude/**'
       - '*.md'
   pull_request:
     branches:
-      - main
+      - master
     paths-ignore:
       - 'docs/**'
       - '.claude/**'
@@ -138,7 +138,7 @@ jobs:
             ];
 
             let comment = `## CI/CD Status\n\n`;
-            comment += `All checks must pass before merging to main:\n\n`;
+            comment += `All checks must pass before merging to master:\n\n`;
 
             let allPassed = true;
 
