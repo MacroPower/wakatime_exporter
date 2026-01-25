@@ -64,7 +64,7 @@ func main() {
 		wakaScrapeURI = kingpin.Flag(
 			"wakatime.scrape-uri",
 			"Base path to query for Wakatime data.",
-		).Default("https://wakatime.com/api/v1").Envar("WAKA_SCRAPE_URI").String()
+		).Default("https://api.wakatime.com/api/v1").Envar("WAKA_SCRAPE_URI").String()
 
 		wakaUser = kingpin.Flag(
 			"wakatime.user",

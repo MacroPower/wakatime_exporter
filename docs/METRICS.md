@@ -69,6 +69,70 @@ wakatime_rank 2886
 # HELP wakatime_cumulative_seconds_total Total seconds (all time).
 # TYPE wakatime_cumulative_seconds_total counter
 wakatime_cumulative_seconds_total 219501.379948
+
+# HELP wakatime_stats_total_seconds Total seconds for the stats range.
+# TYPE wakatime_stats_total_seconds gauge
+wakatime_stats_total_seconds{range="last_7_days"} 125000.5
+
+# HELP wakatime_stats_daily_average_seconds Daily average seconds for the stats range.
+# TYPE wakatime_stats_daily_average_seconds gauge
+wakatime_stats_daily_average_seconds{range="last_7_days"} 17857.21
+
+# HELP wakatime_stats_best_day_seconds Best day total seconds for the stats range.
+# TYPE wakatime_stats_best_day_seconds gauge
+wakatime_stats_best_day_seconds{date="2025-01-20",range="last_7_days"} 28800.0
+
+# HELP wakatime_stats_language_seconds Total seconds for each language in the stats range.
+# TYPE wakatime_stats_language_seconds gauge
+wakatime_stats_language_seconds{name="Go",range="last_7_days"} 75000.0
+wakatime_stats_language_seconds{name="Python",range="last_7_days"} 25000.0
+
+# HELP wakatime_stats_category_seconds Total seconds for each category in the stats range.
+# TYPE wakatime_stats_category_seconds gauge
+wakatime_stats_category_seconds{name="Coding",range="last_7_days"} 100000.0
+wakatime_stats_category_seconds{name="ai coding",range="last_7_days"} 25000.0
+
+# HELP wakatime_durations_ai_lines_added_total Total lines added by AI coding assistants today.
+# TYPE wakatime_durations_ai_lines_added_total counter
+wakatime_durations_ai_lines_added_total 150
+
+# HELP wakatime_durations_ai_lines_deleted_total Total lines deleted by AI coding assistants today.
+# TYPE wakatime_durations_ai_lines_deleted_total counter
+wakatime_durations_ai_lines_deleted_total 25
+
+# HELP wakatime_durations_human_lines_added_total Total lines added by human typing today.
+# TYPE wakatime_durations_human_lines_added_total counter
+wakatime_durations_human_lines_added_total 450
+
+# HELP wakatime_durations_human_lines_deleted_total Total lines deleted by human typing today.
+# TYPE wakatime_durations_human_lines_deleted_total counter
+wakatime_durations_human_lines_deleted_total 100
+
+# HELP wakatime_durations_seconds_total Total duration in seconds today.
+# TYPE wakatime_durations_seconds_total counter
+wakatime_durations_seconds_total 14597.149032
 ```
 
-Additionally, wakatime_exporter exports its own metrics, and metrics for each collector (`[alltime, goal, leader, summary]`).
+Additionally, wakatime_exporter exports its own metrics, and metrics for each collector (`[alltime, durations, goal, leader, stats, summary]`).
+
+## New Metrics (v0.2.0)
+
+### Stats Collector
+
+The stats collector provides pre-aggregated statistics over configurable time ranges. Configure the range with `--wakatime.stats-range` or `WAKA_STATS_RANGE` environment variable.
+
+Supported ranges: `last_7_days`, `last_30_days`, `last_6_months`, `last_year`, `all_time`
+
+### Durations Collector (AI Coding Metrics)
+
+The durations collector provides AI vs Human coding metrics, tracking lines of code added and deleted by AI coding assistants (GitHub Copilot, Claude, etc.) versus manual typing.
+
+**Example PromQL queries:**
+
+```promql
+# AI coding ratio (percentage of code written by AI)
+wakatime_durations_ai_lines_added_total / (wakatime_durations_ai_lines_added_total + wakatime_durations_human_lines_added_total) * 100
+
+# Total lines written today
+wakatime_durations_ai_lines_added_total + wakatime_durations_human_lines_added_total
+```
