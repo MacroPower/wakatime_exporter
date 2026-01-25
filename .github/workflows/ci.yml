@@ -1,0 +1,214 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '.claude/**'
+      - '*.md'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - 'docs/**'
+      - '.claude/**'
+      - '*.md'
+
+# Cancel in-progress runs when a new commit is pushed to the same branch
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Go tests, lint, and build
+  test-go:
+    runs-on: [self-hosted, Linux]
+    steps:
+      - name: Pre-checkout cleanup
+        run: |
+          echo "Cleaning workspace before checkout..."
+          rm -rf $GITHUB_WORKSPACE/* || true
+          rm -rf $GITHUB_WORKSPACE/.git || true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: false  # Disable built-in cache on self-hosted runner
+
+      - name: Download dependencies
+        run: go mod download
+
+      - name: Run Go tests
+        run: |
+          go test ./... -race -count=1 -coverprofile=coverage.out -covermode=atomic -v 2>&1 | tee test-output.txt
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          TOTAL_COVERAGE=$(go tool cover -func=coverage.out 2>/dev/null | grep "^total:" | awk '{print $NF}' || echo "N/A")
+
+          # Count test results
+          TEST_PASSED=$(grep -c "^--- PASS:" test-output.txt 2>/dev/null || echo 0)
+          TEST_PASSED=${TEST_PASSED:-0}
+          TEST_PASSED=$(echo "$TEST_PASSED" | tr -d '[:space:]' | head -c 10)
+
+          TEST_FAILED=$(grep -c "^--- FAIL:" test-output.txt 2>/dev/null || echo 0)
+          TEST_FAILED=${TEST_FAILED:-0}
+          TEST_FAILED=$(echo "$TEST_FAILED" | tr -d '[:space:]' | head -c 10)
+
+          # Ensure we have valid integers
+          [[ "$TEST_PASSED" =~ ^[0-9]+$ ]] || TEST_PASSED=0
+          [[ "$TEST_FAILED" =~ ^[0-9]+$ ]] || TEST_FAILED=0
+
+          SUMMARY="## Go Test Results\n\n"
+
+          if [ "$TEST_FAILED" -gt 0 ]; then
+            SUMMARY+=":x: **${TEST_PASSED} passed, ${TEST_FAILED} failed** | Coverage: ${TOTAL_COVERAGE}\n"
+          else
+            SUMMARY+=":white_check_mark: **${TEST_PASSED} passed** | Coverage: ${TOTAL_COVERAGE}\n"
+          fi
+
+          SUMMARY+="\n| Package | Coverage |\n"
+          SUMMARY+="|---------|----------|\n"
+
+          # Parse per-package coverage
+          while IFS= read -r line; do
+            PKG=$(echo "$line" | awk '{print $2}')
+            COV=$(echo "$line" | grep -o 'coverage: [0-9.]*%' | grep -o '[0-9.]*%')
+            if [ -n "$COV" ]; then
+              SHORT=$(echo "$PKG" | sed 's|github.com/MacroPower/wakatime_exporter/||')
+              SUMMARY+="| \`${SHORT}\` | ${COV} |\n"
+            fi
+          done < <(grep "^ok" test-output.txt 2>/dev/null)
+
+          printf '%b' "$SUMMARY" >> $GITHUB_STEP_SUMMARY
+
+      - name: Run Go lint
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: latest
+          install-mode: goinstall
+
+      - name: Build binary
+        run: |
+          CGO_ENABLED=0 go build -o wakatime_exporter .
+
+      - name: Cleanup workspace
+        if: always()
+        run: rm -rf $GITHUB_WORKSPACE/*
+
+  # Final status check
+  ci-status:
+    needs: [test-go]
+    if: always()
+    runs-on: [self-hosted, Linux]
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: write
+    steps:
+      - name: Update PR comment with test results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runId = context.runId;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${runId}`;
+
+            const { data: jobsData } = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: runId,
+            });
+
+            const jobs = jobsData.jobs;
+
+            const checks = [
+              {
+                jobName: 'test-go',
+                displayName: 'Go Tests & Lint',
+                result: '${{ needs.test-go.result }}'
+              }
+            ];
+
+            let comment = `## CI/CD Status\n\n`;
+            comment += `All checks must pass before merging to main:\n\n`;
+
+            let allPassed = true;
+
+            for (const check of checks) {
+              const job = jobs.find(j => j.name === check.jobName);
+              const jobUrl = job ? job.html_url : runUrl;
+
+              let icon = '';
+              let checkbox = '[ ]';
+
+              if (check.result === 'success') {
+                icon = 'PASS';
+                checkbox = '[x]';
+              } else if (check.result === 'failure') {
+                icon = 'FAIL';
+                checkbox = '[ ]';
+                allPassed = false;
+              } else if (check.result === 'cancelled') {
+                icon = 'CANCELLED';
+                checkbox = '[ ]';
+                allPassed = false;
+              } else if (check.result === 'skipped') {
+                icon = 'SKIPPED';
+                checkbox = '[ ]';
+              }
+
+              comment += `- ${checkbox} ${icon} **${check.displayName}** - [View Details](${jobUrl})\n`;
+            }
+
+            const overallStatus = allPassed ? 'All Checks Passed' : 'Some Checks Failed';
+            comment += `\n**Overall Status**: ${overallStatus}\n`;
+            comment += `\n[View Full CI Run](${runUrl})`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            const botComment = comments.find(c => c.user.type === 'Bot' && c.body.includes('CI/CD Status'));
+
+            if (botComment) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: botComment.id,
+                body: comment,
+              });
+              console.log('Updated existing PR comment');
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: comment,
+              });
+              console.log('Created new PR comment');
+            }
+
+      - name: Check CI status
+        run: |
+          if [[ "${{ needs.test-go.result }}" == "failure" ]]; then
+            echo "CI pipeline failed"
+            exit 1
+          fi
+          echo "CI pipeline passed"
+
+      - name: Cleanup workspace
+        if: always()
+        run: |
+          echo "Cleaning up workspace for self-hosted runner..."
+          rm -rf $GITHUB_WORKSPACE/*
+          echo "Workspace cleaned"
