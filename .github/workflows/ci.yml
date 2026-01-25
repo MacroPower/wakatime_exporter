@@ -103,9 +103,75 @@ jobs:
         if: always()
         run: rm -rf $GITHUB_WORKSPACE/*
 
+  # Docker build and test
+  docker:
+    runs-on: [self-hosted, Linux]
+    needs: [test-go]
+    steps:
+      - name: Pre-checkout cleanup
+        run: |
+          echo "Cleaning workspace before checkout..."
+          rm -rf $GITHUB_WORKSPACE/* || true
+          rm -rf $GITHUB_WORKSPACE/.git || true
+
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+          cache: false
+
+      - name: Build binary for Docker
+        run: |
+          mkdir -p .build/linux-amd64
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o .build/linux-amd64/wakatime_exporter .
+
+      - name: Build Docker image
+        run: |
+          docker build -t wakatime_exporter:${{ github.sha }} -t wakatime_exporter:latest .
+
+      - name: Test Docker container
+        run: |
+          # Start container with a dummy API key (just testing startup)
+          docker run -d --name waka-test -p 9212:9212 -e WAKA_API_KEY=test-key wakatime_exporter:${{ github.sha }}
+
+          # Wait for container to start
+          sleep 3
+
+          # Check if container is running
+          if ! docker ps | grep -q waka-test; then
+            echo "Container failed to start"
+            docker logs waka-test
+            exit 1
+          fi
+
+          # Check if metrics endpoint responds
+          if curl -s --fail http://localhost:9212/ | grep -q "Wakatime Exporter"; then
+            echo "Container health check passed"
+          else
+            echo "Container health check failed"
+            docker logs waka-test
+            exit 1
+          fi
+
+          # Cleanup
+          docker stop waka-test
+          docker rm waka-test
+
+      - name: Cleanup Docker images
+        if: always()
+        run: |
+          docker rmi wakatime_exporter:${{ github.sha }} wakatime_exporter:latest || true
+
+      - name: Cleanup workspace
+        if: always()
+        run: rm -rf $GITHUB_WORKSPACE/*
+
   # Final status check
   ci-status:
-    needs: [test-go]
+    needs: [test-go, docker]
     if: always()
     runs-on: [self-hosted, Linux]
     permissions:
@@ -134,6 +200,11 @@ jobs:
                 jobName: 'test-go',
                 displayName: 'Go Tests & Lint',
                 result: '${{ needs.test-go.result }}'
+              },
+              {
+                jobName: 'docker',
+                displayName: 'Docker Build & Test',
+                result: '${{ needs.docker.result }}'
               }
             ];
 
@@ -200,7 +271,7 @@ jobs:
 
       - name: Check CI status
         run: |
-          if [[ "${{ needs.test-go.result }}" == "failure" ]]; then
+          if [[ "${{ needs.test-go.result }}" == "failure" ]] || [[ "${{ needs.docker.result }}" == "failure" ]]; then
             echo "CI pipeline failed"
             exit 1
           fi
