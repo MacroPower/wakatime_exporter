@@ -1,0 +1,9 @@
+services:
+  wakatime-exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "9212:9212"
+    environment:
+      WAKA_API_KEY: "${WAKA_API_KEY}"

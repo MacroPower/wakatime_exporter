@@ -1,12 +1,12 @@
-ARG ARCH="amd64"
-ARG OS="linux"
-FROM quay.io/prometheus/busybox:latest
-LABEL maintainer="Jacob Colvin (MacroPower) <me@jacobcolvin.com>"
+FROM golang:1.21-alpine AS builder
+WORKDIR /app
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 go build -o wakatime_exporter .
 
-ARG ARCH="amd64"
-ARG OS="linux"
-COPY .build/${OS}-${ARCH}/wakatime_exporter /bin/wakatime_exporter
-
+FROM alpine:latest
+COPY --from=builder /app/wakatime_exporter /bin/wakatime_exporter
 USER nobody
 ENTRYPOINT ["/bin/wakatime_exporter"]
 EXPOSE 9212
