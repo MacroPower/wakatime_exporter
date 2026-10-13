@@ -50,7 +50,7 @@ func NewLeaderCollector(in CommonInputs, logger log.Logger) (Collector, error) {
 			nil, nil,
 		),
 		uri:       in.BaseURI,
-		fetchStat: FetchHTTP(in.Token, in.SSLVerify, in.Timeout, logger),
+		fetchStat: FetchHTTP(in.Token, in.AuthMode, in.SSLVerify, in.Timeout, logger),
 		logger:    logger,
 	}, nil
 }

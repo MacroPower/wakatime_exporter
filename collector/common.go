@@ -25,11 +25,38 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 )
+
+// Auth modes supported by FetchHTTP.
+const (
+	AuthModeAuto   = "auto"
+	AuthModeBasic  = "basic"
+	AuthModeBearer = "bearer"
+)
+
+// OAuthTokenPrefix is the prefix identifying a WakaTime OAuth access token.
+const OAuthTokenPrefix = "waka_tok_"
+
+// AuthorizationHeader builds the value of the Authorization header for the
+// given token and auth mode, without ever logging the token itself.
+func AuthorizationHeader(token string, authMode string) string {
+	switch authMode {
+	case AuthModeBearer:
+		return "Bearer " + token
+	case AuthModeBasic:
+		return "Basic " + base64.StdEncoding.EncodeToString([]byte(token))
+	default: // AuthModeAuto and any unknown value: detect OAuth tokens by prefix.
+		if strings.HasPrefix(token, OAuthTokenPrefix) {
+			return "Bearer " + token
+		}
+		return "Basic " + base64.StdEncoding.EncodeToString([]byte(token))
+	}
+}
 
 // Namespace defines the common namespace to be used by all metrics.
 const namespace = "wakatime"
@@ -43,13 +70,13 @@ func BoolToBinary(b bool) string {
 }
 
 // FetchHTTP is a generic fetch method for Wakatime API endpoints
-func FetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.Logger) func(uri url.URL, subPath string, params url.Values) (io.ReadCloser, error) {
+func FetchHTTP(token string, authMode string, sslVerify bool, timeout time.Duration, logger log.Logger) func(uri url.URL, subPath string, params url.Values) (io.ReadCloser, error) {
 	tr := &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: !sslVerify}}
 	client := http.Client{
 		Timeout:   timeout,
 		Transport: tr,
 	}
-	sEnc := base64.StdEncoding.EncodeToString([]byte(token))
+	authHeader := AuthorizationHeader(token, authMode)
 	return func(uri url.URL, subPath string, params url.Values) (io.ReadCloser, error) {
 		uri.Path = path.Join(uri.Path, subPath)
 		uri.RawQuery = params.Encode()
@@ -63,7 +90,7 @@ func FetchHTTP(token string, sslVerify bool, timeout time.Duration, logger log.L
 		}
 
 		req.Header = map[string][]string{
-			"Authorization": {"Basic " + sEnc},
+			"Authorization": {authHeader},
 		}
 
 		resp, err := client.Do(req)

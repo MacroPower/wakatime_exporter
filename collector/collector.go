@@ -62,6 +62,7 @@ type CommonInputs struct {
 	BaseURI   url.URL
 	URI       url.URL
 	Token     string
+	AuthMode  string
 	SSLVerify bool
 	Timeout   time.Duration
 }

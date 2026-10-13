@@ -60,7 +60,10 @@ Flags:
   --wakatime.scrape-uri="https://wakatime.com/api/v1"
                                  Base path to query for Wakatime data.
   --wakatime.user="current"      User to query for Wakatime data.
-  --wakatime.api-key             Token to use when getting stats from Wakatime.
+  --wakatime.api-key             Token to use when getting stats from Wakatime. Accepts a classic API key (Basic auth)
+                                 or a WakaTime OAuth access token (Bearer auth, waka_tok_...).
+  --wakatime.auth-mode="auto"    Auth mode for the Wakatime API: auto (Bearer for waka_tok_ tokens, Basic otherwise),
+                                 basic, or bearer.
   --wakatime.timeout=5s          Timeout for trying to get stats from Wakatime.
   --wakatime.ssl-verify          Flag that enables SSL certificate verification for the scrape URI.
   --log.level=info               Only log messages with the given severity or above.
@@ -78,6 +81,7 @@ WAKA_METRICS_PATH="/metrics"                  # Path under which to expose metri
 WAKA_SCRAPE_URI="https://wakatime.com/api/v1" # Base path to query for Wakatime data.
 WAKA_USER="current"                           # User to query for Wakatime data.
 WAKA_API_KEY=""                               # Token to use when getting stats from Wakatime.
+WAKA_AUTH_MODE="auto"                         # Auth mode: auto, basic, or bearer.
 WAKA_TIMEOUT="5s"                             # Timeout for trying to get stats from Wakatime.
 WAKA_SSL_VERIFY="true"                        # SSL certificate verification for the scrape URI.
 WAKA_DISABLE_EXPORTER_METRICS="false"         # Exclude metrics about the exporter itself.
@@ -104,6 +108,21 @@ WAKA_API_KEY="YOUR_API_KEY" docker-compose up
 # Windows
 $env:WAKA_API_KEY="YOUR_API_KEY"; docker-compose up
 ```
+
+## Authentication
+
+`--wakatime.api-key` (`WAKA_API_KEY`) accepts either a classic Wakatime API key
+(Basic auth, e.g. for self-hosted [wakapi](https://github.com/muety/wakapi))
+or a WakaTime OAuth access token (`waka_tok_...`, `Authorization: Bearer`).
+
+`--wakatime.auth-mode` (`WAKA_AUTH_MODE`, default `auto`) selects the scheme:
+`auto` uses `Bearer` for `waka_tok_` tokens and `Basic` otherwise;
+`basic` / `bearer` force the mode (useful for testing and unprefixed tokens).
+
+To get an OAuth token, register an app at https://wakatime.com/apps
+(see https://wakatime.com/developers#authentication) with the minimal scopes
+`read_summaries,read_stats,read_goals`, plus `read_private_leaderboards`
+if the `leader` collector is enabled.
 
 ## Compatibility
 

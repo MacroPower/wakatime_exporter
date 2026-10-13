@@ -86,7 +86,7 @@ func NewSummaryCollector(in CommonInputs, logger log.Logger) (Collector, error) 
 			[]string{"name"}, nil,
 		),
 		uri:       in.URI,
-		fetchStat: FetchHTTP(in.Token, in.SSLVerify, in.Timeout, logger),
+		fetchStat: FetchHTTP(in.Token, in.AuthMode, in.SSLVerify, in.Timeout, logger),
 		logger:    logger,
 	}, nil
 }
